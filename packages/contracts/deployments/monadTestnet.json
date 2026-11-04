@@ -1,0 +1,14 @@
+{
+  "chainId": 10143,
+  "token": "0x6c4A96CAdB1Bd44464edB1237027F23f89Ce3dC7",
+  "fairPay": "0x4a4cBDd78356f47a2F43932456f80fEaA6205596",
+  "pool": "0xDFc96e6EEe7Fc7C197b48d8e688Dbb06845C8c85",
+  "poolDeployBlock": "76846364",
+  "verifier": "0x32D75baE7EeBE945cC747d7250630033DB82E03E",
+  "poseidonT3": "0x1966F53eD3074C92Bbdd42Ede68E811d2c13476F",
+  "denomination": "5000000",
+  "batcher": "0x4d6c7A394C056e108F085B0D885C98657E28C028",
+  "batcherDeployBlock": "76846378",
+  "payroll": "0x5B9BC2fE53504948e6a3FA62a80D730fE20F7Eeb",
+  "payrollDeployBlock": "76846477"
+}

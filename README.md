@@ -12,7 +12,19 @@ Testnet only. The code is unaudited. It uses a mintable test USDC (MockUSDC), ne
 
 ## Deployed contracts (Monad Testnet)
 
-<!-- CONTRACTS -->
+Network: **Monad Testnet** (chain id 10143). Every contract is source-verified on the explorer.
+
+| Contract | Address |
+|---|---|
+| MockUSDC (test USDC, 6 decimals) | [`0x6c4A96CAdB1Bd44464edB1237027F23f89Ce3dC7`](https://testnet.monadexplorer.com/address/0x6c4A96CAdB1Bd44464edB1237027F23f89Ce3dC7) |
+| FairPay router | [`0x4a4cBDd78356f47a2F43932456f80fEaA6205596`](https://testnet.monadexplorer.com/address/0x4a4cBDd78356f47a2F43932456f80fEaA6205596) |
+| FairPool (privacy pool, 5 USDC notes) | [`0xDFc96e6EEe7Fc7C197b48d8e688Dbb06845C8c85`](https://testnet.monadexplorer.com/address/0xDFc96e6EEe7Fc7C197b48d8e688Dbb06845C8c85) |
+| MonadSemaphoreVerifier | [`0x32D75baE7EeBE945cC747d7250630033DB82E03E`](https://testnet.monadexplorer.com/address/0x32D75baE7EeBE945cC747d7250630033DB82E03E) |
+| PoseidonT3 (hash library) | [`0x1966F53eD3074C92Bbdd42Ede68E811d2c13476F`](https://testnet.monadexplorer.com/address/0x1966F53eD3074C92Bbdd42Ede68E811d2c13476F) |
+| FairPoolBatcher | [`0x4d6c7A394C056e108F085B0D885C98657E28C028`](https://testnet.monadexplorer.com/address/0x4d6c7A394C056e108F085B0D885C98657E28C028) |
+| FairPayroll (staff payroll escrow) | [`0x5B9BC2fE53504948e6a3FA62a80D730fE20F7Eeb`](https://testnet.monadexplorer.com/address/0x5B9BC2fE53504948e6a3FA62a80D730fE20F7Eeb) |
+
+The same addresses are in [`packages/contracts/deployments/monadTestnet.json`](packages/contracts/deployments/monadTestnet.json).
 
 ## What it does
 
