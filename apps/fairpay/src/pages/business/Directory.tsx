@@ -128,28 +128,61 @@ function RestaurantCard({ r }: { r: Restaurant }) {
     )
 }
 
+// Cloth tints for restaurants without a cover photo, picked from the name: saffron, purple, teal, rose.
+const CLOTH = ["#f2a93b", "#6e54ff", "#1f9e8f", "#e0637f"]
+
 /**
- * A floor-plan pattern for restaurants without a cover photo: tables and chairs, never a stock
- * image. `wide` is a low banner (the storefront header) with the tables in a loose row.
+ * A laid table seen from above for restaurants without a cover photo: cloth, plates, cutlery,
+ * glasses and a candle, tinted per restaurant. Cuisine-neutral on purpose (no food the restaurant
+ * may not serve) and drawn with theme tokens, so it follows light and dark. `wide` is the low
+ * storefront banner (one row of places); otherwise a 16:9 card (two rows facing each other).
  */
 export function CoverArt({ seed, wide = false }: { seed: string; wide?: boolean }) {
     let h = 0
     for (const ch of seed) h = (h * 31 + ch.charCodeAt(0)) >>> 0
-    // Unsigned shifts: a signed one goes negative for half of all names and puts tables off the canvas.
+    // Unsigned shifts: a signed one goes negative for half of all names.
     const bits = (shift: number, n: number) => (h >>> shift) % n
     const [w, ht] = wide ? [960, 160] : [400, 225]
-    const tables = wide
-        ? Array.from({ length: 8 }, (_, i) => ({ x: 60 + i * 120 + bits(i * 3, 3) * 15, y: 50 + bits(i * 4, 3) * 30 }))
-        : Array.from({ length: 5 }, (_, i) => ({ x: 50 + i * 75 + bits(i * 3, 3) * 10, y: 50 + bits(i * 5, 3) * 60 }))
+    const places = wide
+        ? Array.from({ length: 6 }, (_, i) => ({ x: 90 + i * 156, y: 80, flip: false }))
+        : [52, 173].flatMap((y, row) => [80, 200, 320].map((x) => ({ x, y, flip: row === 1 })))
+    const candles = wide ? [168, 480, 792].map((x) => ({ x, y: 80 })) : [{ x: 140, y: 112 }, { x: 260, y: 112 }]
     return (
-        <svg className="fe-cover-art" viewBox={`0 0 ${w} ${ht}`} aria-hidden="true" focusable="false" preserveAspectRatio="xMidYMid slice">
+        <svg
+            className="fe-cover-art"
+            viewBox={`0 0 ${w} ${ht}`}
+            aria-hidden="true"
+            focusable="false"
+            preserveAspectRatio="xMidYMid slice"
+            style={{ ["--cloth" as string]: CLOTH[bits(7, CLOTH.length)] }}
+        >
+            <defs>
+                <pattern id={`fe-weave-${wide ? "w" : "c"}`} width="12" height="12" patternUnits="userSpaceOnUse">
+                    <path d="M0 6h12M6 0v12" className="weave" />
+                </pattern>
+            </defs>
             <rect width={w} height={ht} className="bg" />
-            {tables.map((t, i) => (
-                <g key={i} transform={`translate(${t.x} ${t.y})`}>
-                    <circle r="15" className={i === 1 ? "table hero" : "table"} />
-                    {[0, 90, 180, 270].map((a) => (
-                        <rect key={a} x="-6" y="-29" width="12" height="8" rx="3" className="chair" transform={`rotate(${a})`} />
-                    ))}
+            <rect width={w} height={ht} fill={`url(#fe-weave-${wide ? "w" : "c"})`} />
+            {wide ? (
+                <rect y={ht / 2 - 52} width={w} height="104" className="runner" />
+            ) : (
+                <rect y={ht / 2 - 26} width={w} height="52" className="runner" />
+            )}
+            {places.map((p, i) => (
+                <g key={i} transform={`translate(${p.x} ${p.y})${p.flip ? " rotate(180)" : ""}`}>
+                    <rect x="-52" y="-30" width="18" height="34" rx="3" className="napkin" transform="rotate(-8 -43 -13)" />
+                    <circle r="30" className="plate" />
+                    <circle r="20" className="plate-in" />
+                    <path d="M-40 -18v36M-44 -18v10a4 4 0 0 0 8 0v-10" className="cutlery" />
+                    <path d="M40 -18c5 6 5 16 0 22v14" className="cutlery" />
+                    <circle cx="44" cy="-30" r="8" className="glass" />
+                </g>
+            ))}
+            {candles.map((c, i) => (
+                <g key={i} transform={`translate(${c.x} ${c.y})`}>
+                    <circle r="16" className="glow" />
+                    <circle r="7" className="candle" />
+                    <circle r="2.6" className="flame" />
                 </g>
             ))}
         </svg>
