@@ -18,22 +18,24 @@ Network: **Monad Testnet** (chain id 10143). Every contract is source-verified o
 |---|---|
 | MockUSDC (test USDC, 6 decimals) | [`0x6c4A96CAdB1Bd44464edB1237027F23f89Ce3dC7`](https://testnet.monadexplorer.com/address/0x6c4A96CAdB1Bd44464edB1237027F23f89Ce3dC7) |
 | FairPay router | [`0x4a4cBDd78356f47a2F43932456f80fEaA6205596`](https://testnet.monadexplorer.com/address/0x4a4cBDd78356f47a2F43932456f80fEaA6205596) |
-| FairPool (privacy pool, 5 USDC notes) | [`0xDFc96e6EEe7Fc7C197b48d8e688Dbb06845C8c85`](https://testnet.monadexplorer.com/address/0xDFc96e6EEe7Fc7C197b48d8e688Dbb06845C8c85) |
+| FairPool (privacy pool, 5 USDC notes) | [`0x3a7aAe15F71300D09bc268330eF393a023017A92`](https://testnet.monadexplorer.com/address/0x3a7aAe15F71300D09bc268330eF393a023017A92) |
 | MonadSemaphoreVerifier | [`0x32D75baE7EeBE945cC747d7250630033DB82E03E`](https://testnet.monadexplorer.com/address/0x32D75baE7EeBE945cC747d7250630033DB82E03E) |
 | PoseidonT3 (hash library) | [`0x1966F53eD3074C92Bbdd42Ede68E811d2c13476F`](https://testnet.monadexplorer.com/address/0x1966F53eD3074C92Bbdd42Ede68E811d2c13476F) |
-| FairPoolBatcher | [`0x4d6c7A394C056e108F085B0D885C98657E28C028`](https://testnet.monadexplorer.com/address/0x4d6c7A394C056e108F085B0D885C98657E28C028) |
+| FairPoolBatcher | [`0x55BbEF68c10907Fd66DC528c8973564FC17e9034`](https://testnet.monadexplorer.com/address/0x55BbEF68c10907Fd66DC528c8973564FC17e9034) |
 | FairPayroll (staff payroll escrow) | [`0x5B9BC2fE53504948e6a3FA62a80D730fE20F7Eeb`](https://testnet.monadexplorer.com/address/0x5B9BC2fE53504948e6a3FA62a80D730fE20F7Eeb) |
 
 The same addresses are in [`packages/contracts/deployments/monadTestnet.json`](packages/contracts/deployments/monadTestnet.json).
 
 ### Verified live
 
-Two real payments on these contracts, made through the live app at https://fairpay-blitz.vercel.app/pay/:
+Two real payments, made through the live app at https://fairpay-blitz.vercel.app/pay/:
 
 | Payment | Transaction | Sent by |
 |---|---|---|
 | Public: a bill share paid from the guest's own wallet | [`0xa96621a0…d7eaccaa`](https://testnet.monadexplorer.com/tx/0xa96621a0e8ba54c5d1b16c5a709112acde78b55cb4762f7be8c0f2b7d7eaccaa) | the guest's wallet |
 | Confidential: a FairEats order at Saffron Table, one 5 USDC note | [`0x5cf84225…a4030e`](https://testnet.monadexplorer.com/tx/0x5cf84225acb9ef5e9ae49de814d6555044a27fef8c24a97450c7f4a3b6d4030e) | the relayer, so the guest's wallet doesn't appear |
+
+The confidential payment went through the previous FairPool (`0xDFc96e6EEe7Fc7C197b48d8e688Dbb06845C8c85`), which had no withdraw function; the pool above replaced it on 4 Nov 2026.
 
 ## What it does
 

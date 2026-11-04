@@ -28,9 +28,17 @@ import {FairPay} from "./FairPay.sol";
 ///    and proofs cannot be replayed against another pool or chain.
 ///  - The tree is append-only (no removals), so every historical root remains a valid
 ///    statement of membership and is accepted.
-///  - Payments only go to allowlisted merchants. This keeps the pool a payment rail rather
-///    than a general-purpose mixer. Trust assumption: the owner controls this list.
-///  - The owner can pause and cap deposits but has no function to move pooled funds.
+///  - Payments (`pay`) only go to allowlisted merchants. Trust assumption: the owner controls
+///    this list.
+///  - Exit path: `withdraw` spends a note and sends DENOMINATION straight to any recipient the
+///    proof commits to (message = messageFor(recipient, WITHDRAW_REF)), so a relayer or
+///    front-runner cannot redirect it. `pay` and `withdraw` share one nullifier set: a note is
+///    spent once, by whichever comes first.
+///  - What the owner CAN do: pause deposits and `pay`, change the deposit cap, change the merchant
+///    allowlist, transfer or renounce ownership.
+///  - What the owner CANNOT do: move pooled funds, or stop `withdraw`. `withdraw` is deliberately
+///    not `whenNotPaused` and ignores the allowlist, so users can always take their money out,
+///    even while paused, with no merchants listed, or after ownership is renounced.
 contract FairPool is Ownable2Step, Pausable, ReentrancyGuard {
     using SafeERC20 for IERC20;
     using InternalLeanIMT for LeanIMTData;
@@ -43,6 +51,9 @@ contract FairPool is Ownable2Step, Pausable, ReentrancyGuard {
         uint256 scope;
         uint256[8] points;
     }
+
+    /// @notice The order reference a withdrawal proof's message is bound to (see withdrawMessage).
+    bytes32 public constant WITHDRAW_REF = keccak256("FairPool.withdraw");
 
     IERC20 public immutable token;
     FairPay public immutable fairPay;
@@ -60,6 +71,7 @@ contract FairPool is Ownable2Step, Pausable, ReentrancyGuard {
 
     event Deposit(uint256 indexed commitment, uint256 index, uint256 root);
     event PrivatePayment(uint256 indexed nullifier, address indexed merchant, bytes32 indexed orderRef);
+    event Withdrawal(uint256 indexed nullifier, address indexed recipient);
     event MerchantSet(address indexed merchant, bool allowed);
     event MaxDepositsSet(uint256 maxDeposits);
 
@@ -76,6 +88,7 @@ contract FairPool is Ownable2Step, Pausable, ReentrancyGuard {
     error UnsupportedDepth();
     error NullifierSpent();
     error InvalidProof();
+    error ZeroRecipient();
 
     constructor(
         IERC20 token_,
@@ -129,8 +142,46 @@ contract FairPool is Ownable2Step, Pausable, ReentrancyGuard {
     function pay(address merchant, bytes32 orderRef, PaymentProof calldata proof) external nonReentrant whenNotPaused {
         if (!isMerchant[merchant]) revert NotMerchant();
         if (orderRef == bytes32(0)) revert ZeroOrderRef();
+        _checkProof(proof, messageFor(merchant, orderRef));
+
+        // Effects before interactions.
+        nullifierSpent[proof.nullifier] = true;
+        emit PrivatePayment(proof.nullifier, merchant, orderRef);
+
+        token.forceApprove(address(fairPay), DENOMINATION);
+        fairPay.directPay(merchant, DENOMINATION, orderRef);
+    }
+
+    // ---------------------------------------------------------------- withdrawals
+
+    /// @notice The Semaphore message a proof must carry to withdraw a note to `recipient`.
+    function withdrawMessage(address recipient) public pure returns (uint256) {
+        return messageFor(recipient, WITHDRAW_REF);
+    }
+
+    /// @notice Spend one note and send DENOMINATION straight to `recipient` (no merchant allowlist,
+    ///         no FairPay router).
+    /// @dev Deliberately NOT `whenNotPaused`: users can always take their money out, even if the
+    ///      owner pauses the pool, delists every merchant or renounces ownership. Anyone may submit
+    ///      (a relayer, the user, a front-runner); the proof's message binds the recipient, so the
+    ///      money can only go to `recipient`. Shares the nullifier set with `pay`, so a note spent
+    ///      here cannot pay, and a note that paid cannot be withdrawn.
+    function withdraw(address recipient, PaymentProof calldata proof) external nonReentrant {
+        if (recipient == address(0)) revert ZeroRecipient();
+        _checkProof(proof, withdrawMessage(recipient));
+
+        // Effects before interactions.
+        nullifierSpent[proof.nullifier] = true;
+        emit Withdrawal(proof.nullifier, recipient);
+
+        token.safeTransfer(recipient, DENOMINATION);
+    }
+
+    /// @dev Checks shared by `pay` and `withdraw`: scope, message, depth, known root, unspent
+    ///      nullifier and the Groth16 proof itself.
+    function _checkProof(PaymentProof calldata proof, uint256 message) private view {
         if (proof.scope != SCOPE) revert WrongScope();
-        if (proof.message != messageFor(merchant, orderRef)) revert WrongMessage();
+        if (proof.message != message) revert WrongMessage();
         if (proof.merkleTreeDepth < MIN_DEPTH || proof.merkleTreeDepth > MAX_DEPTH) revert UnsupportedDepth();
         if (!knownRoots[proof.merkleTreeRoot]) revert UnknownRoot();
         if (nullifierSpent[proof.nullifier]) revert NullifierSpent();
@@ -145,13 +196,6 @@ contract FairPool is Ownable2Step, Pausable, ReentrancyGuard {
             proof.merkleTreeDepth
         );
         if (!ok) revert InvalidProof();
-
-        // Effects before interactions.
-        nullifierSpent[proof.nullifier] = true;
-        emit PrivatePayment(proof.nullifier, merchant, orderRef);
-
-        token.forceApprove(address(fairPay), DENOMINATION);
-        fairPay.directPay(merchant, DENOMINATION, orderRef);
     }
 
     // ---------------------------------------------------------------- views

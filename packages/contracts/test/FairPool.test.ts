@@ -248,4 +248,171 @@ describe("FairPool", () => {
             )
         })
     })
+
+    describe("withdraw", () => {
+        async function withdrawProof(
+            pool: Awaited<ReturnType<typeof fixture>>["pool"],
+            id: Identity,
+            group: Group,
+            recipient: string,
+            scope: bigint
+        ) {
+            return generateProof(id, group, await pool.withdrawMessage(recipient), scope)
+        }
+
+        it("binds the message to the recipient and WITHDRAW_REF", async () => {
+            const { attacker, pool } = await loadFixture(fixture)
+            expect(await pool.WITHDRAW_REF()).to.equal(ethers.id("FairPool.withdraw"))
+            expect(await pool.withdrawMessage(attacker.address)).to.equal(
+                await pool.messageFor(attacker.address, ethers.id("FairPool.withdraw"))
+            )
+        })
+
+        it("sends exactly one denomination to the recipient, nothing to merchants or the router", async () => {
+            const { merchant, relayer, attacker, usdc, fairPay, pool, ids, group, scope } = await loadFixture(fixture)
+            const recipient = attacker.address // any address, not allowlisted
+            const proof = await withdrawProof(pool, ids[1], group, recipient, scope)
+
+            const tx = pool.connect(relayer).withdraw(recipient, toCall(proof))
+            await expect(tx).to.emit(pool, "Withdrawal").withArgs(proof.nullifier, recipient)
+            await expect(tx).to.not.emit(fairPay, "PaymentReceived")
+            await expect(tx).to.not.emit(pool, "PrivatePayment")
+            await expect(tx).to.changeTokenBalances(
+                usdc,
+                [recipient, await pool.getAddress(), merchant.address, await fairPay.getAddress(), relayer.address],
+                [DENOM, -DENOM, 0n, 0n, 0n]
+            )
+            expect(await pool.nullifierSpent(proof.nullifier)).to.equal(true)
+            expect(await usdc.allowance(await pool.getAddress(), await fairPay.getAddress())).to.equal(0n)
+        })
+
+        it("cannot be redirected: a proof for recipient A submitted for B reverts WrongMessage", async () => {
+            const { customer, relayer, attacker, usdc, pool, ids, group, scope } = await loadFixture(fixture)
+            const proof = await withdrawProof(pool, ids[0], group, customer.address, scope)
+            await expect(pool.connect(attacker).withdraw(attacker.address, toCall(proof))).to.be.revertedWithCustomError(
+                pool,
+                "WrongMessage"
+            )
+            // A front-runner submitting it unchanged only pays the intended recipient.
+            const before = await usdc.balanceOf(customer.address)
+            await pool.connect(attacker).withdraw(customer.address, toCall(proof))
+            expect(await usdc.balanceOf(customer.address)).to.equal(before + DENOM)
+            expect(await usdc.balanceOf(attacker.address)).to.equal(0n)
+            await expect(pool.connect(relayer).withdraw(customer.address, toCall(proof))).to.be.revertedWithCustomError(
+                pool,
+                "NullifierSpent"
+            )
+        })
+
+        it("a payment proof cannot be used to withdraw, and a withdrawal proof cannot pay", async () => {
+            const { merchant, relayer, pool, ids, group, scope } = await loadFixture(fixture)
+            const payProof = await proofFor(pool, ids[0], group, merchant.address, REF, scope)
+            await expect(pool.connect(relayer).withdraw(merchant.address, toCall(payProof))).to.be.revertedWithCustomError(
+                pool,
+                "WrongMessage"
+            )
+            const wProof = await withdrawProof(pool, ids[1], group, merchant.address, scope)
+            await expect(pool.connect(relayer).pay(merchant.address, REF, toCall(wProof))).to.be.revertedWithCustomError(
+                pool,
+                "WrongMessage"
+            )
+        })
+
+        it("rejects reuse of a withdrawn note, for another withdrawal or a payment", async () => {
+            const { customer, merchant, relayer, attacker, pool, ids, group, scope } = await loadFixture(fixture)
+            const p1 = await withdrawProof(pool, ids[0], group, customer.address, scope)
+            await pool.connect(relayer).withdraw(customer.address, toCall(p1))
+
+            const p2 = await withdrawProof(pool, ids[0], group, attacker.address, scope)
+            expect(p2.nullifier).to.equal(p1.nullifier)
+            await expect(pool.connect(relayer).withdraw(attacker.address, toCall(p2))).to.be.revertedWithCustomError(
+                pool,
+                "NullifierSpent"
+            )
+            const p3 = await proofFor(pool, ids[0], group, merchant.address, REF, scope)
+            await expect(pool.connect(relayer).pay(merchant.address, REF, toCall(p3))).to.be.revertedWithCustomError(
+                pool,
+                "NullifierSpent"
+            )
+        })
+
+        it("a note that already paid cannot be withdrawn", async () => {
+            const { customer, merchant, relayer, pool, ids, group, scope } = await loadFixture(fixture)
+            await pool
+                .connect(relayer)
+                .pay(merchant.address, REF, toCall(await proofFor(pool, ids[2], group, merchant.address, REF, scope)))
+            const w = await withdrawProof(pool, ids[2], group, customer.address, scope)
+            await expect(pool.connect(relayer).withdraw(customer.address, toCall(w))).to.be.revertedWithCustomError(
+                pool,
+                "NullifierSpent"
+            )
+        })
+
+        it("works while paused, with no merchants listed and after ownership is renounced", async () => {
+            const { owner, customer, merchant, merchant2, relayer, usdc, pool, ids, group, scope } = await loadFixture(fixture)
+            await pool.connect(owner).pause()
+            await pool.connect(owner).setMerchant(merchant.address, false)
+            await pool.connect(owner).setMerchant(merchant2.address, false)
+            await pool.connect(owner).renounceOwnership()
+            expect(await pool.paused()).to.equal(true)
+
+            const before = await usdc.balanceOf(customer.address)
+            for (const id of ids) {
+                await pool.connect(relayer).withdraw(customer.address, toCall(await withdrawProof(pool, id, group, customer.address, scope)))
+            }
+            expect(await usdc.balanceOf(customer.address)).to.equal(before + DENOM * 3n)
+            expect(await usdc.balanceOf(await pool.getAddress())).to.equal(0n)
+        })
+
+        it("rejects the zero recipient", async () => {
+            const { relayer, pool, ids, group, scope } = await loadFixture(fixture)
+            const proof = await withdrawProof(pool, ids[0], group, ethers.ZeroAddress, scope)
+            await expect(pool.connect(relayer).withdraw(ethers.ZeroAddress, toCall(proof))).to.be.revertedWithCustomError(
+                pool,
+                "ZeroRecipient"
+            )
+        })
+
+        it("rejects another scope, unknown roots, unsupported depths and tampered proofs", async () => {
+            const { customer, relayer, pool, ids, group, scope } = await loadFixture(fixture)
+            const message = await pool.withdrawMessage(customer.address)
+            const otherScope = await generateProof(ids[0], group, message, 12345n)
+            await expect(pool.connect(relayer).withdraw(customer.address, toCall(otherScope))).to.be.revertedWithCustomError(
+                pool,
+                "WrongScope"
+            )
+
+            const proof = await withdrawProof(pool, ids[0], group, customer.address, scope)
+            await expect(
+                pool.connect(relayer).withdraw(customer.address, { ...toCall(proof), merkleTreeRoot: 42n })
+            ).to.be.revertedWithCustomError(pool, "UnknownRoot")
+            await expect(
+                pool.connect(relayer).withdraw(customer.address, { ...toCall(proof), merkleTreeDepth: 33 })
+            ).to.be.revertedWithCustomError(pool, "UnsupportedDepth")
+            const badNullifier = { ...toCall(proof), nullifier: (BigInt(proof.nullifier) + 1n).toString() }
+            await expect(pool.connect(relayer).withdraw(customer.address, badNullifier)).to.be.revertedWithCustomError(
+                pool,
+                "InvalidProof"
+            )
+            const aliased = { ...toCall(proof), nullifier: (BigInt(proof.nullifier) + SNARK_FIELD).toString() }
+            await expect(pool.connect(relayer).withdraw(customer.address, aliased)).to.be.revertedWithCustomError(
+                pool,
+                "InvalidProof"
+            )
+
+            // Failed attempts burned nothing: the genuine proof still works.
+            await pool.connect(relayer).withdraw(customer.address, toCall(proof))
+        })
+
+        it("keeps the pool solvent across mixed payments and withdrawals", async () => {
+            const { customer, merchant, relayer, usdc, pool, ids, group, scope } = await loadFixture(fixture)
+            await pool
+                .connect(relayer)
+                .pay(merchant.address, REF, toCall(await proofFor(pool, ids[0], group, merchant.address, REF, scope)))
+            expect(await usdc.balanceOf(await pool.getAddress())).to.equal(DENOM * 2n)
+            await pool.connect(relayer).withdraw(customer.address, toCall(await withdrawProof(pool, ids[1], group, customer.address, scope)))
+            expect(await usdc.balanceOf(await pool.getAddress())).to.equal(DENOM)
+            expect(await usdc.balanceOf(merchant.address)).to.equal(DENOM)
+        })
+    })
 })

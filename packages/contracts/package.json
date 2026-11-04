@@ -7,6 +7,7 @@
     "test": "hardhat test",
     "deploy:local": "hardhat run scripts/deploy.ts --network localhost",
     "deploy:testnet": "hardhat run scripts/deploy.ts --network monadTestnet",
+    "deploy:pool:testnet": "hardhat run scripts/deploy-pool.ts --network monadTestnet",
     "deploy:batcher:testnet": "hardhat run scripts/deploy-batcher.ts --network monadTestnet",
     "deploy:payroll:testnet": "hardhat run scripts/deploy-payroll.ts --network monadTestnet"
   },
