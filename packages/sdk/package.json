@@ -1,0 +1,49 @@
+{
+  "name": "@fairpay/sdk",
+  "version": "0.1.0",
+  "description": "Public and private (zero-knowledge) payments with merchant-side verification on Monad.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./relayer": {
+      "types": "./dist/relayer.d.ts",
+      "import": "./dist/relayer.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "prepublishOnly": "npm run build && npm test"
+  },
+  "peerDependencies": {
+    "viem": "^2.0.0"
+  },
+  "dependencies": {
+    "@semaphore-protocol/group": "4.14.5",
+    "@semaphore-protocol/identity": "4.14.5",
+    "@semaphore-protocol/proof": "4.14.5",
+    "poseidon-lite": "0.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3",
+    "viem": "^2.57.13",
+    "vitest": "5.0.5"
+  },
+  "overrides": {
+    "ws": "^8.20.2",
+    "underscore": "^1.13.8"
+  }
+}
