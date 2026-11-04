@@ -23,7 +23,28 @@ export type ProofTx = {
  * entries once payments have been made on this deployment (hash, sender and block read from the
  * chain). While the list is empty, the pages link to the contracts on the explorer instead.
  */
-export const PROOF_TXS: ProofTx[] = []
+export const PROOF_TXS: ProofTx[] = [
+    {
+        kind: "Public",
+        hash: "0xa96621a0e8ba54c5d1b16c5a709112acde78b55cb4762f7be8c0f2b7d7eaccaa",
+        note: "A share of a bill, paid from the guest's own wallet",
+        from: "0x1384675b3b293f3a71bf121525874b983c34c4b7",
+        fromLabel: "Guest wallet",
+        to: "0x4a4cbdd78356f47a2f43932456f80feaa6205596",
+        toLabel: "FairPay router",
+        block: 76857139
+    },
+    {
+        kind: "Private",
+        hash: "0x5cf84225acb9ef5e9ae49de814d6555044a27fef8c24a97450c7f4a3b6d4030e",
+        note: "A FairEats order at Saffron Table, paid confidentially with one 5 USDC note",
+        from: "0x6f1ef92e0d6eb2428558781b5d87cfee19164266",
+        fromLabel: "Restaurant relayer",
+        to: "0xdfc96e6eee7fc7c197b48d8e688dbb06845c8c85",
+        toLabel: "Privacy pool",
+        block: 76857240
+    }
+]
 
 export const POOL_ADDRESS: string = deployment.pool
 

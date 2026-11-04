@@ -26,6 +26,15 @@ Network: **Monad Testnet** (chain id 10143). Every contract is source-verified o
 
 The same addresses are in [`packages/contracts/deployments/monadTestnet.json`](packages/contracts/deployments/monadTestnet.json).
 
+### Verified live
+
+Two real payments on these contracts, made through the live app at https://fairpay-blitz.vercel.app/pay/:
+
+| Payment | Transaction | Sent by |
+|---|---|---|
+| Public: a bill share paid from the guest's own wallet | [`0xa96621a0…d7eaccaa`](https://testnet.monadexplorer.com/tx/0xa96621a0e8ba54c5d1b16c5a709112acde78b55cb4762f7be8c0f2b7d7eaccaa) | the guest's wallet |
+| Confidential: a FairEats order at Saffron Table, one 5 USDC note | [`0x5cf84225…a4030e`](https://testnet.monadexplorer.com/tx/0x5cf84225acb9ef5e9ae49de814d6555044a27fef8c24a97450c7f4a3b6d4030e) | the relayer, so the guest's wallet doesn't appear |
+
 ## What it does
 
 ### Split bills
