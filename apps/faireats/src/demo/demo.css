@@ -1,0 +1,190 @@
+/* Demo build only. Uses the app's tokens from styles.css, with fallbacks. */
+
+.demo-banner {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: var(--violet-tint, #ebe5ff);
+    color: var(--ink, #1d1b33);
+    border-bottom: 2px dashed var(--violet, #6a4bd6);
+    font-family: var(--body, system-ui, sans-serif);
+    font-size: 0.94rem;
+    line-height: 1.35;
+}
+
+.demo-banner[data-tone="ink"] {
+    background: var(--ink, #1d1b33);
+    color: var(--plate, #f4f2fb);
+    border-bottom-color: var(--saffron, #f2a93b);
+    --demo-focus: var(--saffron, #f2a93b);
+}
+
+.demo-banner__in {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px 16px;
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 6px var(--gutter, 16px);
+    min-height: 44px;
+    box-sizing: border-box;
+}
+
+.demo-banner__text {
+    margin: 0;
+    padding: 4px 0;
+    flex: 1 1 12rem;
+    min-width: 0;
+}
+
+.demo-banner__glyph {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border: 2px dashed currentColor;
+    border-radius: 50%;
+    margin-right: 6px;
+    vertical-align: -1px;
+}
+
+.demo-banner__links {
+    flex: 0 0 auto;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0 4px;
+}
+
+.demo-banner a,
+.demo-banner button {
+    font: inherit;
+    color: inherit;
+    background: none;
+    border: 0;
+    padding: 0 8px;
+    min-height: 44px;
+    min-width: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+}
+
+.demo-banner a:focus-visible,
+.demo-banner button:focus-visible {
+    outline: 3px solid var(--demo-focus, var(--violet, #6a4bd6));
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+
+.demo-banner__confirm {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0 2px;
+    font-weight: 700;
+}
+
+.demo-banner__note {
+    margin: 0 auto;
+    max-width: 1120px;
+    padding: 0 var(--gutter, 16px) 8px;
+    box-sizing: border-box;
+}
+
+.demo-banner code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 4px;
+    background: rgba(106, 75, 214, 0.14);
+}
+
+.demo-banner[data-tone="ink"] code {
+    background: rgba(244, 242, 251, 0.14);
+}
+
+.demo-wide,
+.demo-banner a.demo-wide {
+    display: none;
+}
+
+@media (min-width: 640px) {
+    .demo-wide {
+        display: inline;
+    }
+    .demo-banner a.demo-wide {
+        display: inline-flex;
+    }
+    .demo-narrow,
+    .demo-banner a.demo-narrow {
+        display: none;
+    }
+}
+
+.demo-sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.demo-explorer__eyebrow {
+    color: var(--ink-soft, #4a4766);
+    font-size: 0.94rem;
+    margin-bottom: 4px;
+}
+
+.demo-receipt {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 6px 16px;
+    margin: 16px 0;
+    overflow-wrap: anywhere;
+}
+
+.demo-receipt dt {
+    color: var(--ink-soft, #4a4766);
+}
+
+.demo-receipt dd {
+    margin: 0;
+    font-weight: 700;
+}
+
+/*
+ * The banner is sticky at the top of every demo screen. DemoBanner measures it into
+ * --demo-banner-h, and the app's own sticky bars sit just below it instead of sliding under it.
+ */
+html[data-demo] {
+    scroll-padding-top: calc(var(--demo-banner-h, 64px) + 16px);
+}
+
+html[data-demo] .panel {
+    top: calc(var(--demo-banner-h, 64px) + 20px);
+}
+
+@media (max-width: 880px) {
+    html[data-demo] {
+        /* Banner plus the sticky guest switch (about 60px). */
+        scroll-padding-top: calc(var(--demo-banner-h, 64px) + 72px);
+    }
+
+    html[data-demo] .guest-switch {
+        top: var(--demo-banner-h, 64px);
+    }
+}
+
+/* Stops the PIN form's top margin from escaping the dark kitchen area and leaving a light band. */
+html[data-demo] .kitchen {
+    display: flow-root;
+}

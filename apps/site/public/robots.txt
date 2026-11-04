@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://fairpay-blitz.vercel.app/sitemap.xml

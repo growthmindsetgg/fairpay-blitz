@@ -1,0 +1,35 @@
+{
+  "name": "faireats",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently -k -n api,web \"node --import tsx --watch server/index.ts\" \"vite\"",
+    "dev:demo": "vite --mode demo",
+    "build": "tsc -p tsconfig.json --noEmit && vite build",
+    "build:demo": "tsc -p tsconfig.json --noEmit && vite build --mode demo",
+    "preview:demo": "vite preview --mode demo",
+    "start": "vite build && tsx server/index.ts",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@fairpay/sdk": "0.1.0",
+    "@hono/node-server": "2.1.5",
+    "hono": "4.13.14",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "react-router-dom": "7.18.5",
+    "viem": "2.57.13"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.6",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.1.2",
+    "concurrently": "10.0.6",
+    "tsx": "4.23.15",
+    "typescript": "7.0.2",
+    "vite": "8.3.5",
+    "vitest": "5.0.5"
+  }
+}
