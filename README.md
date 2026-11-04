@@ -28,14 +28,13 @@ The same addresses are in [`packages/contracts/deployments/monadTestnet.json`](p
 
 ### Verified live
 
-Two real payments, made through the live app at https://fairpay-blitz.vercel.app/pay/:
+Real transactions on the contracts above, made through the live app at https://fairpay-blitz.vercel.app/pay/:
 
-| Payment | Transaction | Sent by |
+| What | Transaction | Sent by |
 |---|---|---|
 | Public: a bill share paid from the guest's own wallet | [`0xa96621a0…d7eaccaa`](https://testnet.monadexplorer.com/tx/0xa96621a0e8ba54c5d1b16c5a709112acde78b55cb4762f7be8c0f2b7d7eaccaa) | the guest's wallet |
-| Confidential: a FairEats order at Saffron Table, one 5 USDC note | [`0x5cf84225…a4030e`](https://testnet.monadexplorer.com/tx/0x5cf84225acb9ef5e9ae49de814d6555044a27fef8c24a97450c7f4a3b6d4030e) | the relayer, so the guest's wallet doesn't appear |
-
-The confidential payment went through the previous FairPool (`0xDFc96e6EEe7Fc7C197b48d8e688Dbb06845C8c85`), which had no withdraw function; the pool above replaced it on 4 Nov 2026.
+| Confidential: a FairEats order at Saffron Table, paid with one 5 USDC note | [`0x867c10b8…5d6d4d1`](https://testnet.monadexplorer.com/tx/0x867c10b854aaf3bd21cd2a4bf3098e0690cd120972719ab864c249d8e7d6d4d1) | the relayer, so the guest's wallet doesn't appear |
+| Withdraw: one note taken back from the pool to the owner's wallet | [`0x40d09ee4…d28557f2`](https://testnet.monadexplorer.com/tx/0x40d09ee401eb8e4c5eaef04146c5ca751cca881b48ce0a663b7440f5d28557f2) | the note owner's wallet |
 
 ## What it does
 

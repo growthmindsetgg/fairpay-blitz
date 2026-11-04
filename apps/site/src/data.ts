@@ -36,13 +36,13 @@ export const PROOF_TXS: ProofTx[] = [
     },
     {
         kind: "Private",
-        hash: "0x5cf84225acb9ef5e9ae49de814d6555044a27fef8c24a97450c7f4a3b6d4030e",
+        hash: "0x867c10b854aaf3bd21cd2a4bf3098e0690cd120972719ab864c249d8e7d6d4d1",
         note: "A FairEats order at Saffron Table, paid confidentially with one 5 USDC note",
         from: "0x6f1ef92e0d6eb2428558781b5d87cfee19164266",
         fromLabel: "Restaurant relayer",
-        to: "0xdfc96e6eee7fc7c197b48d8e688dbb06845c8c85",
+        to: "0x3a7aae15f71300d09bc268330ef393a023017a92",
         toLabel: "Privacy pool",
-        block: 76857240
+        block: 76864934
     }
 ]
 
