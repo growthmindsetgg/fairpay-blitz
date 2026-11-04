@@ -4,7 +4,7 @@ import deployment from "../../../packages/contracts/deployments/monadTestnet.jso
 
 export const EXPLORER = "https://testnet.monadexplorer.com"
 export const CHAIN_ID = 10143
-export const SITE_URL = "https://fairpay-blitz.vercel.app"
+export const SITE_URL = "https://fairpay.business"
 
 export type ProofTx = {
     kind: "Public" | "Private"
@@ -75,7 +75,7 @@ export const addressUrl = (a: string) => `${EXPLORER}/address/${a}`
  */
 export const APP_URL = "/pay/"
 /** Shown in the screenshot frames' address bar. */
-export const APP_HOST = "fairpay-blitz.vercel.app/pay"
+export const APP_HOST = "fairpay.business/pay"
 
 // The demo lives at /app/ as a separate static build, so links to it are full page loads.
 // FairEats reads ?table= from the menu URL, so the demo opens at table 4.

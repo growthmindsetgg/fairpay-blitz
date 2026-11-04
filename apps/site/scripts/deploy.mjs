@@ -1,5 +1,5 @@
 // Publishes the website (and the app at /pay/) to the Vercel project fairpay-blitz
-// (https://fairpay-blitz.vercel.app). It refuses to upload to any other project.
+// (https://fairpay.business). It refuses to upload to any other project.
 //
 //   npm run deploy:vercel                       check the Vercel sign-in, build, pack, upload to production
 //   npm run deploy:vercel -- --skip-build       reuse the last build (apps/site/dist)
@@ -26,7 +26,7 @@ import { fileURLToPath } from "node:url"
 
 const VERCEL_VERSION = "65.8.0"
 const PROJECT_NAME = "fairpay-blitz"
-const SITE_URL = "https://fairpay-blitz.vercel.app"
+const SITE_URL = "https://fairpay.business"
 const site = path.join(path.dirname(fileURLToPath(import.meta.url)), "..")
 const root = path.join(site, "..", "..")
 const skipBuild = process.argv.includes("--skip-build")

@@ -2,9 +2,9 @@
 
 Private payments and bill splitting on Monad: split any bill, pay your share publicly or confidentially through a zero-knowledge privacy pool, plus FairEats for restaurants and a payroll escrow for staff.
 
-- **Website:** https://fairpay-blitz.vercel.app
-- **App:** https://fairpay-blitz.vercel.app/pay/
-- **Simulated demo (no wallet needed):** https://fairpay-blitz.vercel.app/app/
+- **Website:** https://fairpay.business
+- **App:** https://fairpay.business/pay/
+- **Simulated demo (no wallet needed):** https://fairpay.business/app/
 - **Network:** Monad Testnet (chain id 10143)
 - **Repo:** https://github.com/growthmindsetgg/fairpay-blitz (branch `main`)
 
@@ -28,7 +28,7 @@ The same addresses are in [`packages/contracts/deployments/monadTestnet.json`](p
 
 ### Verified live
 
-Real transactions on the contracts above, made through the live app at https://fairpay-blitz.vercel.app/pay/:
+Real transactions on the contracts above, made through the live app at https://fairpay.business/pay/:
 
 | What | Transaction | Sent by |
 |---|---|---|

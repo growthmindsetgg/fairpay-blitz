@@ -1,6 +1,6 @@
 // Packs the finished site (apps/site/dist) into Vercel's Build Output API layout so
 // `vercel deploy --prebuilt` uploads exactly these static files and Vercel runs no build of its
-// own. Headers and rewrites come from apps/site/vercel.json.
+// own. Redirects, headers and rewrites come from apps/site/vercel.json.
 //
 // /api/* is a rewrite to an external origin (the FairPay server on Render): Vercel forwards those
 // requests and their answers, cookies included, so the app at /pay/ talks only to this website.
@@ -54,7 +54,18 @@ const proxyTransforms = proxySecretHeader
 const external = config.rewrites.filter((r) => isExternal(r.destination))
 const internal = config.rewrites.filter((r) => !isExternal(r.destination))
 
+// Redirects come first of all, so a request for an old host (the .vercel.app one, www.) never
+// reaches a page, a header rule or the /api proxy: a stale tab is sent to the one origin sign-in
+// accepts. `permanent: true` is a 308, which keeps the method and body; Vercel keeps the query.
+const redirects = (config.redirects ?? []).map((r) => ({
+    src: toRegex(r.source),
+    ...(r.has ? { has: r.has } : {}),
+    headers: { Location: toDest(r.source, r.destination) },
+    status: r.statusCode ?? (r.permanent === false ? 307 : 308)
+}))
+
 const routes = [
+    ...redirects,
     ...config.headers.map((h) => ({
         src: toRegex(h.source),
         headers: Object.fromEntries(h.headers.map((x) => [x.key, x.value])),

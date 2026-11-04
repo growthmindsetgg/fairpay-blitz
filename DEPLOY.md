@@ -7,7 +7,7 @@ FairPay has four parts in the cloud:
 | Contracts | Monad Testnet (chain 10143) | Already deployed; no hosting needed. Addresses are in [README.md](README.md) and `packages/contracts/deployments/monadTestnet.json`. |
 | Server | [Render](https://render.com), service `fairpay` | The FairPay API, built from `apps/fairpay/Dockerfile` by the `render.yaml` Blueprint. Live at https://fairpay-ed8y.onrender.com. |
 | Database | [Supabase](https://supabase.com) (Postgres) | Every bill, order, payment and the indexers' progress. |
-| Website and app pages | Vercel | https://fairpay-blitz.vercel.app, with the app at https://fairpay-blitz.vercel.app/pay/ and the simulated demo at `/app/`. |
+| Website and app pages | Vercel | https://fairpay.business, with the app at https://fairpay.business/pay/ and the simulated demo at `/app/`. |
 
 People open the app on the website. Vercel serves the app's pages and forwards every `/api` request to the `fairpay` service on Render, so visitors never see a Render address. See [The website serves the app](#the-website-serves-the-app-pay).
 
@@ -17,7 +17,7 @@ The Docker image also runs on any host that runs containers (Railway, Fly.io, a 
 
 ## Before you start
 
-1. **The server needs `DATABASE_URL` and `PUBLIC_ORIGIN`.** The image runs with `NODE_ENV=production`, and in production the server refuses to start without either one (`apps/fairpay/server/env.ts`, `apps/fairpay/server/origin.ts`). It says why in Render's Logs tab. Create the Supabase database first (next section). `PUBLIC_ORIGIN` is the website's address, `https://fairpay-blitz.vercel.app`, because that is where people open the app.
+1. **The server needs `DATABASE_URL` and `PUBLIC_ORIGIN`.** The image runs with `NODE_ENV=production`, and in production the server refuses to start without either one (`apps/fairpay/server/env.ts`, `apps/fairpay/server/origin.ts`). It says why in Render's Logs tab. Create the Supabase database first (next section). `PUBLIC_ORIGIN` is the website's address, `https://fairpay.business`, because that is where people open the app.
 2. **Give each running server its own relayer and faucet wallets.** A server keeps its own transactions in order only inside its own process: the faucet sends one transaction at a time (`apps/fairpay/server/chain.ts`) and the SDK queues the relayer's sends per account (`packages/sdk/src/chain.ts`). Nothing coordinates two servers. If two servers (for example a local one and Render) send from the same wallet at the same moment, they can pick the same nonce and one transaction fails. A new wallet only needs some test MON. `RELAYER_KEY` and `FAUCET_KEY` must be different keys, or the server refuses to start.
 
 ## What it costs
@@ -56,7 +56,7 @@ The first start on a new database scans the privacy pool from its deploy block. 
    |---|---|
    | `DATABASE_URL` | The Supabase Session pooler string from the section above. |
    | `DATABASE_CA` | `/etc/secrets/supabase-ca.crt`. Then, in the service's **Environment** tab under **Secret Files**, add a file named `supabase-ca.crt` with the contents of `apps/fairpay/certs/supabase-root-2021.crt`. (Or paste the certificate text itself as the value.) |
-   | `PUBLIC_ORIGIN` | `https://fairpay-blitz.vercel.app`: the address people open the app at, no path, no trailing slash. |
+   | `PUBLIC_ORIGIN` | `https://fairpay.business`: the address people open the app at, no path, no trailing slash. |
    | `PROXY_SECRET` | Optional. The same value as the Vercel project's `PROXY_SECRET` (see [Proxy secret](#proxy-secret-optional)). |
    | `RELAYER_KEY` | Testnet wallet that submits confidential payments and pays their gas. |
    | `FAUCET_KEY` | Testnet wallet behind the faucet. A different key from `RELAYER_KEY`. |
@@ -69,25 +69,26 @@ The first start on a new database scans the privacy pool from its deploy block. 
 
 4. **Point the website at the service.** Copy the service's address from the top of its Render page. If it is not `https://fairpay-ed8y.onrender.com`, change the `/api/:path*` rewrite's destination in `apps/site/vercel.json` to it and publish the website again (`npm run deploy:vercel`).
 
-   Sign-in messages must name exactly the address people open the app at, so a wrong `PUBLIC_ORIGIN` makes every sign-in fail. When the server starts it logs `Public origin: https://fairpay-blitz.vercel.app (app at /pay/)`; check that it matches. If you add a custom domain to the website, change `PUBLIC_ORIGIN` to it. With `PUBLIC_APP_PATH` set, the Render address doesn't show the app itself: its pages redirect to the website.
+   Sign-in messages must name exactly the address people open the app at, so a wrong `PUBLIC_ORIGIN` makes every sign-in fail. When the server starts it logs `Public origin: https://fairpay.business (app at /pay/)`; check that it matches. If the website moves to another domain, change `PUBLIC_ORIGIN` to it. With `PUBLIC_APP_PATH` set, the Render address doesn't show the app itself: its pages redirect to the website.
 
 5. **Check the visitor address the server sees.** Rate limits count by visitor address, so the server must find the real one in `X-Forwarded-For`. `TRUST_PROXY_HOPS` is the number of proxies in front of the server that add to that header. Through the website there are 4: Vercel (2 hops), Cloudflare and Render's load balancer. Check it after deploying:
 
    ```bash
-   curl https://fairpay-blitz.vercel.app/api/whoami
+   curl https://fairpay.business/api/whoami
    ```
 
    It must show your own public IP address (search "what is my ip" to compare). If it shows another address, change `TRUST_PROXY_HOPS` by one and check again. Never set it higher than the real count, or visitors can choose their own rate-limit key.
 
    One gap remains: Vercel's external rewrite keeps a visitor's own `X-Forwarded-For`, so a visitor who sends one through the website can pick their per-address rate-limit key. The global caps still hold (faucet 60 claims an hour, 4 relays at a time). See SECURITY.md (S1).
 
-6. **Check it works.** Open https://fairpay-blitz.vercel.app/api/config. It should say `"storage":"supabase"` and `"relayerReady":true`. Then open https://fairpay-blitz.vercel.app/pay/, sign in, and open Business > FairEats.
+6. **Check it works.** Open https://fairpay.business/api/config. It should say `"storage":"supabase"` and `"relayerReady":true`. Then open https://fairpay.business/pay/, sign in, and open Business > FairEats.
 
 ## The website serves the app (/pay/)
 
 - **Pages.** `npm run build:vercel` also runs `npm run build:pay -w fairpay-app`, which builds the React app with Vite `base: "/pay/"` into `apps/fairpay/dist-site`. `apps/site/scripts/assemble.mjs` copies it to `apps/site/dist/pay`. The router reads its basename from the build, so `/pay/bills/new`, `/pay/b/<token>` and `/pay/r/<slug>` all work, and `apps/site/vercel.json` sends every `/pay/*` path to `/pay/index.html`. The ordinary build (`npm run build -w fairpay-app`, the Docker image and `npm run dev:fairpay`) serves the app at `/`.
 - **API.** `apps/site/vercel.json` rewrites `/api/:path*` to `https://fairpay-ed8y.onrender.com/api/:path*`. To the browser the API is on the website's own origin, so the session cookie (`fp_session`, `HttpOnly`, `SameSite=Lax`, `Secure`), the `x-fairpay` CSRF header and Sign-In with Ethereum all work. Vercel is told not to cache these answers (`x-vercel-enable-rewrite-caching: 0`), and the server sends `Cache-Control: no-store`.
-- **Server settings on Render.** `PUBLIC_ORIGIN=https://fairpay-blitz.vercel.app` (sign-in checks it), `PUBLIC_APP_PATH=/pay` (links) and `TRUST_PROXY_HOPS=4`. If the Render address changes, change the rewrite in `apps/site/vercel.json` and publish the website again.
+- **Server settings on Render.** `PUBLIC_ORIGIN=https://fairpay.business` (sign-in checks it), `PUBLIC_APP_PATH=/pay` (links) and `TRUST_PROXY_HOPS=4`. If the Render address changes, change the rewrite in `apps/site/vercel.json` and publish the website again.
+- **Old addresses.** The site moved from the Vercel project's own `.vercel.app` address to the custom domain `fairpay.business` (both are domains of the Vercel project `fairpay-blitz`). The `redirects` in `apps/site/vercel.json` send every request for the old `.vercel.app` host or `www.fairpay.business` to `https://fairpay.business` with a permanent 308, same path and query, `/api/*` included, before any other route, so a stale tab can never sign in against an origin the server rejects.
 - **Headers.** The landing page, guide and `/app/` demo keep a strict Content-Security-Policy. Only `/pay/*` gets what the app needs on top: `'wasm-unsafe-eval'` and `blob:` workers for the in-browser prover, and `connect-src` for the Monad testnet RPC (`https://testnet-rpc.monad.xyz`) and the proving files (`https://snark-artifacts.pse.dev`). These are the same rules the app's own server sends. If you change the server's `RPC_URL`, add the new RPC's origin to the `/pay` policy in `apps/site/vercel.json` too.
 - **Waking up.** When the Render service is asleep, the app shows "Starting the server…" and keeps asking for up to three minutes. Every website page also pings `/api/health` once on load, so a sleeping instance starts waking early. Vercel waits up to 120 seconds for one answer ([Vercel](https://vercel.com/docs/errors/ROUTER_EXTERNAL_TARGET_ERROR)); Render usually wakes in about 50.
 
@@ -99,7 +100,7 @@ Without it, anyone who finds the Render address can call the API directly with a
 2. In Vercel, open the project's **Settings → Environment Variables** and add `PROXY_SECRET` with that value (Production).
 3. In Render, open the `fairpay` service's **Environment** tab and add `PROXY_SECRET` with the same value.
 4. Publish the website: `npm run deploy:vercel`. It turns the header on by default (it runs `vercel-output.mjs` with `PROXY_SECRET_HEADER=1`). Vercel then adds `x-fairpay-proxy: <the secret>` to every request it forwards, filling it in itself, so the value never appears in the repository or the uploaded files ([Vercel: restricting your origin to Vercel traffic](https://vercel.com/docs/rewrites#restricting-your-origin-to-vercel-traffic)). If the Vercel project has no `PROXY_SECRET`, publish with `PROXY_SECRET_HEADER=0 npm run deploy:vercel` (PowerShell: `$env:PROXY_SECRET_HEADER=0; npm run deploy:vercel`).
-5. Check `https://fairpay-blitz.vercel.app/api/whoami`. It must say `"proxy":"yes"` and show your own address. `"proxy":"no"` means the two values differ or the website was published without the header; nothing breaks, but every visitor then shares Vercel's addresses for rate limits, so fix it or remove `PROXY_SECRET` from Render. `"proxy":"off"` means Render has no `PROXY_SECRET`.
+5. Check `https://fairpay.business/api/whoami`. It must say `"proxy":"yes"` and show your own address. `"proxy":"no"` means the two values differ or the website was published without the header; nothing breaks, but every visitor then shares Vercel's addresses for rate limits, so fix it or remove `PROXY_SECRET` from Render. `"proxy":"off"` means Render has no `PROXY_SECRET`.
 
 ## Publish the website
 

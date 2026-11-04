@@ -3,6 +3,30 @@
   "git": {
     "deploymentEnabled": false
   },
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "fairpay-blitz.vercel.app"
+        }
+      ],
+      "destination": "https://fairpay.business/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.fairpay.business"
+        }
+      ],
+      "destination": "https://fairpay.business/:path*",
+      "permanent": true
+    }
+  ],
   "rewrites": [
     {
       "source": "/api/:path*",

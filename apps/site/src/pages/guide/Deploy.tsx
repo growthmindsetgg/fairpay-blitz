@@ -85,7 +85,7 @@ export default function Deploy() {
                         <strong>Point it at this website.</strong> People open the app on this website at{" "}
                         <code>/pay/</code>, and the website forwards <code>/api</code> to the Render service (next
                         section). In the <code>fairpay</code> service's <b>Environment</b> tab set{" "}
-                        <code>PUBLIC_ORIGIN</code> to <code>https://<wbr />fairpay-blitz<wbr />.vercel<wbr />.app</code>{" "}
+                        <code>PUBLIC_ORIGIN</code> to <code>https://<wbr />fairpay<wbr />.business</code>{" "}
                         (exactly, no trailing slash), <code>PUBLIC_APP_PATH</code> to <code>/pay</code> and{" "}
                         <code>TRUST_PROXY_HOPS</code> to <code>4</code>, then redeploy. Sign-in messages must name this
                         address. The server refuses to start in production without <code>PUBLIC_ORIGIN</code> and{" "}
@@ -142,7 +142,7 @@ export default function Deploy() {
                     so visitors only ever see this website's address.
                 </p>
                 <p>
-                    The live copy is at <a href="https://fairpay-blitz.vercel.app">fairpay-blitz.vercel.app</a>. To publish a
+                    The live copy is at <a href="https://fairpay.business">fairpay.business</a>. To publish a
                     new version, sign in to the Vercel CLI once (<code>npx vercel login</code>), then run from the
                     repository root:
                 </p>

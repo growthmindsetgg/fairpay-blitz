@@ -26,7 +26,7 @@ describe("PUBLIC_APP_PATH", () => {
     })
 
     it("builds app links from the origin and the path", () => {
-        expect(appUrlOf({ publicOrigin: "https://fairpay-blitz.vercel.app", appPath: "/pay" })).toBe("https://fairpay-blitz.vercel.app/pay")
+        expect(appUrlOf({ publicOrigin: "https://fairpay.business", appPath: "/pay" })).toBe("https://fairpay.business/pay")
         expect(appUrlOf({ publicOrigin: "https://fairpay.onrender.com" })).toBe("https://fairpay.onrender.com")
     })
 })
