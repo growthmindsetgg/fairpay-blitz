@@ -1,15 +1,139 @@
-# Monad Blitz Devcon Mumbai Submission Process
+# FairPay
 
-## Steps to prepare your project repo:
+Private payments and bill splitting on Monad: split any bill, pay your share publicly or confidentially through a zero-knowledge privacy pool, plus FairEats for restaurants and a payroll escrow for staff.
 
-1. Visit the `monad-blitz-devcon-mumbai` repo (link [here](https://github.com/monad-developers/monad-blitz-devcon-mumbai)) and fork it.
+- **Website:** https://fairpay-blitz.vercel.app
+- **App:** https://fairpay-blitz.vercel.app/pay/
+- **Simulated demo (no wallet needed):** https://fairpay-blitz.vercel.app/app/
+- **Network:** Monad Testnet (chain id 10143)
+- **Repo:** https://github.com/growthmindsetgg/fairpay-blitz (branch `main`)
 
-![1.png](./screenshots/1.png)
+Testnet only. The code is unaudited. It uses a mintable test USDC (MockUSDC), never real money. The app's faucet gives you test USDC and a little MON.
 
-2. Give it your project name, a one-liner description, make sure you are forking `main` branch and click `Create Fork`
+## Deployed contracts (Monad Testnet)
 
-![2.png](https://github.com/monad-developers/monad-blitz-denver/raw/main/screenshots/2.png?raw=true)
+<!-- CONTRACTS -->
 
-3. In your fork you can make all the changes you want, add code of your project, create branches, add information to `README.md` , you can change anything and everything.
+## What it does
 
-4. For next steps head to [Blitz Portal](https://blitz.devnads.com)
+### Split bills
+
+Create a bill, add friends by wallet or by name, and split it equally, by fixed amounts, by percentages, by shares or by items. Each bill has a share link. Everyone pays their own share from their own wallet, and the bill shows who has paid. A share counts as paid only after the server has checked the payment on-chain.
+
+### Confidential payments
+
+A confidential payment hides which wallet paid. It does not hide the amount: each note is exactly 5 USDC. The pool only pays allowlisted businesses, so bills between friends are paid publicly and restaurant shares can be paid confidentially.
+
+How it works:
+
+1. **Deposit.** You add notes to the FairPool privacy pool. Each note is a 5 USDC deposit tied to a secret that stays in your browser. The deposit is public; what you do with it later is not.
+2. **Prove.** To pay, your browser builds a zero-knowledge proof (Semaphore v4) that you own one of the deposits in the pool, without saying which one. The proof is bound to the merchant and the order.
+3. **Relay.** The server's relayer submits the proof and pays the gas, so your wallet does not appear in the payment transaction. The relayer cannot redirect the money: the proof fixes the merchant and the order.
+4. **Verify.** FairPool pays the merchant through the FairPay router, which emits a `PaymentReceived` event. The server checks that event on-chain (order reference, merchant, amount, chain, canonical block, confirmations) before it marks the share paid. A note can be spent only once.
+
+### FairEats
+
+Under Business > FairEats, restaurants list themselves with menus and tables. Guests order at a table, then one person pays or everyone pays their own dishes, publicly or confidentially. Each order gets an Indian GST invoice.
+
+### Merchant Payments view
+
+The restaurant owner's Payments tab shows the payout wallet and its live USDC balance, totals (public vs confidential, tips), every payment with its on-chain proof and a re-check button, invoices, a CSV export, and money that needs a refund. A confidential payment never shows who paid.
+
+### Team pay and payroll escrow
+
+The owner can pay staff straight from their wallet (a public USDC transfer the server checks on-chain). With the FairPayroll escrow the owner funds an escrow, sets salary schedules or approves shifts, and staff claim what they have earned from their own wallets. The owner can never withdraw money owed to staff. An optional auto-pay keeper claims on staff's behalf. Salaries and claims are public on-chain, and the app says so.
+
+## How it works
+
+```
+            ┌─────────── payment rails ──────────────┐
+customer ──►│ public : wallet  ─────────────► FairPay │──► PaymentReceived(orderRef, merchant, payer, amount)
+            │ private: ZK proof ► FairPool ► FairPay │                │
+            └────────────────────────────────────────┘                ▼
+                                                     server: verifyPaymentTx() checks it on-chain
+```
+
+- **Contracts** (Solidity, Hardhat): `FairPay` (non-custodial payment router), `FairPool` (Semaphore v4 privacy pool, fixed 5 USDC notes, allowlisted merchants), `MonadSemaphoreVerifier` (the Semaphore verifier adapted to Monad's precompile gas prices), `FairPoolBatcher` (adds several notes in one transaction), `FairPayroll` (staff payroll escrow with no owner or admin).
+- **SDK** (`@fairpay/sdk`, TypeScript + viem): order references, public and confidential payments, notes, tree loading, relayer, payroll, and `verifyPaymentTx` for merchant-side verification.
+- **Server** (Hono on Node): wallet sign-in (Sign-In with Ethereum), bills, restaurants, orders, invoices, the relayer, the faucet, a deposit indexer and a payroll event indexer. Data lives in Postgres: Supabase when `DATABASE_URL` is set, otherwise a local PGlite database.
+- **App** (React 19 + Vite): the FairPay web app. Proofs are built in the browser.
+- **Website** (Vite, static, on Vercel): landing page, guide, a simulated demo at `/app/`, and the app at `/pay/`. Vercel forwards `/api/*` to the server on Render (https://fairpay-ed8y.onrender.com).
+
+## Repo layout
+
+| Path | What it is |
+|---|---|
+| `packages/contracts` | Hardhat project with the contracts, tests and deploy scripts. Not an npm workspace: run `npm install` inside it. |
+| `packages/sdk` | `@fairpay/sdk`. Build it (`npm run build:sdk`) before anything that imports it. |
+| `apps/fairpay` | The main app: server (`server/`), React app (`src/`), shared types, tests. Plan and API contract: [PLATFORM.md](apps/fairpay/PLATFORM.md). Schema: [schema.sql](apps/fairpay/server/schema.sql). |
+| `apps/faireats` | FairEats as a standalone demo. Its in-browser simulated build is the website's `/app/`. |
+| `apps/site` | The public website, published to Vercel. |
+| `render.yaml` | Render Blueprint for the `fairpay` server. |
+
+## Run it locally
+
+You need Node 24 and npm. Use testnet keys only. Never use a key that holds real funds.
+
+```bash
+git clone https://github.com/growthmindsetgg/fairpay-blitz.git
+cd fairpay-blitz
+npm install
+npm run build:sdk
+```
+
+### Tests
+
+```bash
+npm run test:fairpay                                         # FairPay app tests: in-memory database, fake chain, no network
+npm run typecheck -w fairpay-app                             # typecheck the app
+cd packages/contracts && npm install && npx hardhat test     # contract tests, in-process, with real proofs
+```
+
+The SDK's end-to-end tests (`npm test -w @fairpay/sdk`) and the FairEats node tests (`npm test`) need a local Hardhat node with the contracts deployed: run `npx hardhat node` in `packages/contracts`, then `npm run deploy:local` there. Without a node, the FairEats node tests skip.
+
+### Start the app
+
+```bash
+cp apps/fairpay/.env.example apps/fairpay/.env
+npm run dev:fairpay
+```
+
+Open http://localhost:5174 (the API runs on http://127.0.0.1:8788). The app reads the contract addresses from `packages/contracts/deployments/monadTestnet.json`.
+
+Settings in `apps/fairpay/.env` (all optional for a local run):
+
+| Name | What it does |
+|---|---|
+| `DATABASE_URL` | Supabase connection string. Leave it empty and the app uses a local PGlite database in `apps/fairpay/data/pg`. |
+| `DATABASE_CA` | Needed with a Supabase `DATABASE_URL`: `certs/supabase-root-2021.crt` (in the repo). |
+| `RELAYER_KEY` | Testnet wallet that submits confidential payments and pays their gas. Without it, confidential payments are off. |
+| `FAUCET_KEY` | Testnet wallet behind the faucet (test USDC and a little MON). Must differ from `RELAYER_KEY`. |
+| `MERCHANT_ADDRESS` | Payout wallet of the demo restaurant. It must be allowlisted on FairPool to take confidential payments. |
+| `DEMO_OWNER_WALLET` | Your wallet, so you can manage the demo restaurant. Defaults to `MERCHANT_ADDRESS`. |
+| `KEEPER_KEY` | Auto-pay keeper for the payroll escrow. Its own wallet, different from the other two keys. |
+
+When `apps/fairpay/.env` doesn't set `RELAYER_KEY`, `FAUCET_KEY` or `MERCHANT_ADDRESS`, the app reads them from `apps/faireats/.env`. Without any keys the app still runs: you can sign in, split bills and pay publicly from your own wallet.
+
+Each relayed confidential payment costs the relayer about 0.15 MON in gas, so give the relayer wallet a few testnet MON.
+
+### Deploy the contracts yourself (optional)
+
+```bash
+cd packages/contracts
+export DEPLOYER_KEY=0x...            # testnet-only key with some MON
+export MERCHANTS=0xYourPayoutWallet  # merchants to allowlist, comma-separated
+npm run deploy:testnet               # MockUSDC, FairPay, verifier, PoseidonT3, FairPool, FairPoolBatcher
+npm run deploy:payroll:testnet       # FairPayroll
+```
+
+`npm run deploy:batcher:testnet` adds a new FairPoolBatcher to an existing pool.
+
+The scripts write the addresses to `deployments/monadTestnet.json`, which the app reads. With no `TOKEN_ADDRESS` a MockUSDC is deployed. Set `OWNER_ADDRESS` to hand ownership to a Safe.
+
+## Deploy
+
+The server runs on Render with Supabase. The website and the app's pages run on Vercel. Step by step: [DEPLOY.md](DEPLOY.md).
+
+## Security
+
+The code is unaudited and runs on testnet only. The privacy model, what each party sees, the guarantees and the known limits are in [SECURITY.md](SECURITY.md).
