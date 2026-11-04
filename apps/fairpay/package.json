@@ -1,0 +1,39 @@
+{
+  "name": "fairpay-app",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently -k -n api,web \"node --import tsx --watch server/index.ts\" \"vite\"",
+    "build": "tsc -p tsconfig.json --noEmit && vite build",
+    "build:pay": "vite build --base=/pay/ --outDir=dist-site --emptyOutDir",
+    "build:server": "esbuild server/index.ts --bundle --platform=node --format=esm --target=node24 --external:@electric-sql/pglite --external:postgres --outfile=dist-server/index.mjs --log-level=warning",
+    "start": "vite build && tsx server/index.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "check:db": "node --import tsx server/check-db.ts",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@electric-sql/pglite": "0.5.8",
+    "@fairpay/sdk": "0.1.0",
+    "@hono/node-server": "2.1.5",
+    "hono": "4.13.14",
+    "postgres": "3.4.9",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "react-router-dom": "7.18.5",
+    "viem": "2.57.13"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.6",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.1.2",
+    "concurrently": "10.0.6",
+    "esbuild": "0.28.2",
+    "tsx": "4.23.15",
+    "typescript": "7.0.2",
+    "vite": "8.3.5",
+    "vitest": "5.0.5"
+  }
+}

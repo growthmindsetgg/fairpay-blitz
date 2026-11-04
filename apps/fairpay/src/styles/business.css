@@ -1,0 +1,3491 @@
+/* FairEats pages (src/pages/business). Builds on D's tokens (tokens.css) and component classes
+   (.btn, .badge, .switch, .copy-link). Every class here starts with "fe-" so nothing leaks into
+   the rest of the app. Restaurant warmth comes from food photos, the saffron table and the floor
+   plan, not from new colours: violet still means privacy, basil still means verified. */
+
+/* ------------------------------------------------------------------ page frame */
+
+.fe-page {
+    max-width: calc(1120px + 2 * var(--gutter));
+    margin: 0 auto;
+    padding: var(--s-5) var(--gutter) 0;
+    display: grid;
+    gap: var(--s-5);
+    min-width: 0;
+}
+
+/* Narrow FairEats pages keep the app's left edge; only the column is narrower. */
+.fe-narrow > * {
+    max-width: 680px;
+    width: 100%;
+}
+
+/* Register: each group of fields is its own card. */
+.fe-narrow > .fe-form > .fe-fieldset {
+    padding: var(--s-5);
+    border-top: 0;
+    border-radius: var(--r-md);
+    background: var(--surface);
+    box-shadow: var(--shadow-1);
+}
+
+@media (max-width: 479px) {
+    .fe-narrow > .fe-form > .fe-fieldset {
+        padding: var(--s-4);
+    }
+}
+
+@media (min-width: 900px) {
+    .fe-page {
+        padding-top: var(--s-6);
+    }
+}
+
+.fe h1 {
+    font-size: var(--t-title);
+    letter-spacing: -0.018em;
+    overflow-wrap: anywhere;
+}
+
+.fe-h2 {
+    font-size: var(--t-h2);
+}
+
+.fe-h3 {
+    font-size: var(--t-h3);
+}
+
+.fe-lead {
+    color: var(--text-soft);
+    max-width: 40rem;
+}
+
+.fe-muted {
+    color: var(--text-faint);
+    font-size: var(--t-small);
+}
+
+.fe-hint {
+    color: var(--text-faint);
+    font-size: var(--t-micro);
+    line-height: 1.45;
+}
+
+.fe-num {
+    font-family: var(--money);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+.fe-mono {
+    font-family: var(--mono);
+    font-size: var(--t-mono);
+    letter-spacing: 0.01em;
+    font-variant-numeric: tabular-nums;
+}
+
+.fe-break {
+    overflow-wrap: anywhere;
+}
+
+.fe-label-sm {
+    display: block;
+    font-size: var(--t-label);
+    font-weight: 600;
+    color: var(--text-soft);
+}
+
+.fe-crumb {
+    font-size: var(--t-small);
+    color: var(--text-soft);
+}
+
+.fe-crumb a {
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.fe-crumb a:hover {
+    color: var(--text);
+    text-decoration: underline;
+}
+
+.fe-stack {
+    display: grid;
+    gap: var(--s-5);
+    min-width: 0;
+    align-content: start;
+}
+
+.fe-section {
+    display: grid;
+    gap: var(--s-4);
+    min-width: 0;
+}
+
+.fe-row-between {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--s-2) var(--s-4);
+}
+
+.fe-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--s-4);
+}
+
+.fe-head > div {
+    display: grid;
+    gap: var(--s-2);
+    min-width: 0;
+    flex: 1 1 20rem;
+}
+
+.fe-head-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-2);
+}
+
+.fe-count {
+    font-family: var(--body);
+    font-size: var(--t-micro);
+    font-weight: 600;
+    color: var(--text-faint);
+    font-variant-numeric: tabular-nums;
+    margin-left: var(--s-1);
+}
+
+.fe-link {
+    background: none;
+    border: 0;
+    padding: 0;
+    font: inherit;
+    font-weight: 600;
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+    cursor: pointer;
+}
+
+.fe-danger-text {
+    color: var(--error);
+}
+
+.btn.is-armed {
+    background: var(--error-bg);
+    border-color: var(--error);
+    color: var(--error);
+}
+
+/* ------------------------------------------------------------------ states */
+
+.fe-state,
+.fe-empty {
+    padding: var(--s-6) var(--s-5);
+    border-radius: var(--r-md);
+    background: var(--surface);
+    box-shadow: var(--shadow-0);
+}
+
+.fe-empty {
+    padding: var(--s-6) var(--s-5);
+    border: 1px dashed var(--line-strong);
+    border-radius: var(--r-md);
+    background: var(--surface);
+}
+
+.fe-empty h3 {
+    font-size: var(--t-h3);
+}
+
+.fe-empty p {
+    color: var(--text-soft);
+    max-width: 36rem;
+}
+
+.fe-alert {
+    padding: var(--s-3) var(--s-4);
+    border-radius: var(--r-sm);
+    box-shadow: inset 3px 0 0 var(--error);
+    background: var(--error-bg);
+    color: var(--text);
+    font-size: var(--t-small);
+    overflow-wrap: anywhere;
+}
+
+.fe-alert--info {
+    box-shadow: inset 3px 0 0 var(--warn-bar);
+    background: var(--warn-bg);
+}
+
+.fe-alert--ok {
+    box-shadow: inset 3px 0 0 var(--verified);
+    background: var(--verified-bg);
+}
+
+.fe-callout {
+    padding: var(--s-3) var(--s-4);
+    border-radius: var(--r-sm);
+    background: var(--warn-bg);
+    box-shadow: inset 3px 0 0 var(--warn-bar);
+    font-size: var(--t-small);
+}
+
+.fe-signin {
+    display: grid;
+    gap: var(--s-4);
+    justify-items: start;
+    padding: var(--s-5);
+    border-radius: var(--r-md);
+    background: var(--surface);
+    box-shadow: var(--shadow-1);
+}
+
+.fe-signin p {
+    color: var(--text-soft);
+}
+
+/* ------------------------------------------------------------------ chips, marks */
+
+.fe-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 24px;
+    padding: 0 10px;
+    border-radius: var(--r-pill);
+    font-size: var(--t-label);
+    font-weight: 600;
+    line-height: 1.2;
+    white-space: nowrap;
+    background: var(--surface-2);
+    color: var(--text-soft);
+}
+
+.fe-chip-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+    flex: none;
+    opacity: 0.85;
+}
+
+.fe-chip--muted .fe-chip-dot,
+.fe-chip--plain .fe-chip-dot {
+    background: var(--line-strong);
+}
+
+.fe-chip--plain {
+    background: transparent;
+    box-shadow: inset 0 0 0 1px var(--line);
+    color: var(--text);
+}
+
+/* A free table: an outlined chip, so "free" never borrows basil (which means verified). */
+.fe-chip--basil {
+    background: transparent;
+    box-shadow: inset 0 0 0 1px var(--line);
+    color: var(--text);
+}
+
+.fe-chip--basil .fe-chip-dot {
+    background: transparent;
+    box-shadow: inset 0 0 0 1.5px var(--text-soft);
+    opacity: 1;
+}
+
+.fe-chip--saffron {
+    background: var(--warn-bg);
+    color: var(--warn-ink);
+}
+
+.fe-chip--saffron .fe-chip-dot {
+    background: var(--warn-bar);
+    opacity: 1;
+}
+
+/* Confidential, as .badge-private: an ink chip with a cyan lock (Chip draws the lock). */
+.fe-chip--violet {
+    background: var(--private-chip);
+    color: var(--on-private-chip);
+}
+
+.fe-chip--violet .icon {
+    color: var(--private-glyph);
+}
+
+.fe-chip--chili {
+    background: var(--error-bg);
+    color: var(--error);
+}
+
+.fe-veg {
+    display: inline-flex;
+    flex: none;
+    width: 14px;
+    height: 14px;
+}
+
+.fe-veg svg {
+    width: 14px;
+    height: 14px;
+}
+
+/* FSSAI convention: green for veg, brown for non-veg; the shape (dot / triangle) also differs. */
+.fe-veg.is-veg {
+    color: #2b8a3e;
+}
+
+.fe-veg.is-nonveg {
+    color: #8a3d1a;
+}
+
+@media (prefers-color-scheme: dark) {
+    .fe-veg.is-veg {
+        color: #6fcf86;
+    }
+
+    .fe-veg.is-nonveg {
+        color: #e8956b;
+    }
+}
+
+.fe-spice {
+    display: inline-flex;
+    gap: 1px;
+    align-items: center;
+}
+
+.fe-spice svg {
+    width: 9px;
+    height: 13px;
+}
+
+.fe-spice .on {
+    fill: var(--error);
+}
+
+.fe-spice .off {
+    fill: var(--surface-3);
+}
+
+.fe-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex: none;
+}
+
+.fe-dot.is-free {
+    background: var(--saffron);
+}
+
+.fe-dot.is-full {
+    background: var(--line-strong);
+}
+
+.fe-sold {
+    font-size: var(--t-micro);
+    font-weight: 600;
+    color: var(--text-faint);
+    text-transform: none;
+}
+
+/* ------------------------------------------------------------------ form controls */
+
+.fe-form {
+    display: grid;
+    gap: var(--s-4);
+    min-width: 0;
+}
+
+.fe-fieldset {
+    display: grid;
+    gap: var(--s-4);
+    padding-top: var(--s-4);
+    border-top: 1px solid var(--hair);
+}
+
+.fe-fieldset legend {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: var(--t-h2);
+    padding-bottom: var(--s-3);
+    float: left;
+    width: 100%;
+}
+
+.fe-fieldset legend + * {
+    clear: both;
+}
+
+.fe-field {
+    display: grid;
+    gap: 6px;
+    min-width: 0;
+    align-content: start;
+}
+
+.fe-field > label,
+.fe-field > legend,
+.fe-label {
+    font-size: var(--t-small);
+    font-weight: 600;
+    color: var(--text);
+}
+
+.fe-opt {
+    font-weight: 400;
+    color: var(--text-faint);
+    font-size: var(--t-micro);
+}
+
+.fe-field-error {
+    font-size: var(--t-micro);
+    color: var(--error);
+    font-weight: 600;
+}
+
+.fe-field-ok {
+    font-size: var(--t-micro);
+    color: var(--verified-ink);
+    font-weight: 600;
+}
+
+.fe :is(input:not([type="radio"]):not([type="checkbox"]):not([type="file"]), select, textarea) {
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+    padding: 10px var(--s-3);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--r-sm);
+    background-color: var(--surface);
+    color: var(--text);
+    transition: border-color var(--dur-ui) var(--ease-ui);
+}
+
+.fe textarea {
+    resize: vertical;
+    line-height: 1.5;
+}
+
+.fe select {
+    appearance: none;
+    padding-right: 36px;
+    background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%);
+    background-position:
+        calc(100% - 18px) 50%,
+        calc(100% - 13px) 50%;
+    background-size:
+        5px 5px,
+        5px 5px;
+    background-repeat: no-repeat;
+}
+
+.fe :is(input, select, textarea)::placeholder {
+    color: var(--text-faint);
+    opacity: 1;
+}
+
+.fe :is(input:not([type="radio"]):not([type="checkbox"]), select, textarea):hover:not(:disabled) {
+    border-color: var(--text-soft);
+}
+
+.fe :is(input:not([type="radio"]):not([type="checkbox"]), select, textarea):focus-visible {
+    outline-offset: 0;
+    border-color: var(--focus);
+}
+
+.fe :is(input, select, textarea):disabled {
+    background-color: var(--surface-2);
+}
+
+.fe :is(input, select, textarea)[aria-invalid="true"] {
+    border-color: var(--error);
+}
+
+.fe input[type="radio"],
+.fe input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    accent-color: var(--accent);
+    flex: none;
+}
+
+.fe-grid2 {
+    display: grid;
+    gap: var(--s-4);
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+}
+
+.fe-form-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--s-3);
+}
+
+.fe-saved {
+    font-size: var(--t-small);
+    color: var(--verified-ink);
+    font-weight: 600;
+}
+
+.fe-radios {
+    gap: var(--s-2);
+}
+
+.fe-radios label,
+.fe-segmented label {
+    display: flex;
+    align-items: center;
+    gap: var(--s-2);
+    min-height: 36px;
+    font-size: var(--t-small);
+    cursor: pointer;
+}
+
+.fe-segmented > div {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-2);
+}
+
+.fe-segmented label {
+    padding: 0 var(--s-3);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--r-pill);
+    min-height: 40px;
+}
+
+.fe-segmented label:has(input:checked) {
+    background: var(--surface-2);
+    border-color: var(--text);
+    font-weight: 600;
+}
+
+.fe-segmented input {
+    position: absolute;
+    opacity: 0;
+    width: 1px;
+    height: 1px;
+}
+
+.fe-segmented label:has(input:focus-visible) {
+    outline: 3px solid var(--focus);
+    outline-offset: 2px;
+}
+
+.fe-inline-form {
+    display: grid;
+    gap: var(--s-3);
+    padding: var(--s-5);
+    border-radius: var(--r-md);
+    background: var(--surface);
+    box-shadow: var(--shadow-1);
+}
+
+.fe-inline-fields {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: var(--s-3);
+}
+
+.fe-inline-fields .fe-field {
+    flex: 1 1 9rem;
+}
+
+/* Stepper: − 3 + */
+.fe-stepper {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--r-pill);
+    background: var(--surface);
+}
+
+.fe-stepper button {
+    width: 44px;
+    height: 44px;
+    border: 0;
+    background: transparent;
+    border-radius: var(--r-pill);
+    font-size: 1.25rem;
+    line-height: 1;
+    color: var(--text);
+}
+
+.fe-stepper button:hover:not(:disabled) {
+    background: var(--surface-2);
+}
+
+.fe-stepper button:disabled {
+    color: var(--text-faint);
+    opacity: 0.6;
+}
+
+.fe-stepper output {
+    min-width: 2ch;
+    text-align: center;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+.fe-stepper--sm button {
+    width: 36px;
+    height: 36px;
+    font-size: 1.0625rem;
+}
+
+@media (pointer: coarse) {
+    .fe-stepper--sm button {
+        width: 44px;
+        height: 44px;
+    }
+}
+
+.fe-stepper-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s-3);
+    font-weight: 600;
+}
+
+.fe-icon-btn {
+    display: inline-grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--r-sm);
+    background: var(--surface);
+    color: var(--text);
+}
+
+.fe-icon-btn svg {
+    width: 16px;
+    height: 16px;
+}
+
+.fe-icon-btn:hover:not(:disabled) {
+    background: var(--surface-2);
+}
+
+.fe-icon-btn:disabled {
+    color: var(--text-faint);
+    border-color: var(--hair);
+}
+
+@media (pointer: coarse) {
+    .fe-icon-btn {
+        width: 44px;
+        height: 44px;
+    }
+}
+
+/* ------------------------------------------------------------------ image picker */
+
+.fe-picker {
+    display: grid;
+    gap: var(--s-2);
+}
+
+.fe-picker-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-4);
+    align-items: center;
+}
+
+.fe-picker-frame {
+    position: relative;
+    flex: none;
+    width: 160px;
+    aspect-ratio: 4 / 3;
+    border-radius: var(--r-sm);
+    overflow: hidden;
+    background: var(--surface-2);
+    display: grid;
+    place-items: center;
+    color: var(--text-faint);
+    font-size: var(--t-micro);
+    box-shadow: inset 0 0 0 1px var(--hair);
+}
+
+.fe-picker--square .fe-picker-frame {
+    width: 96px;
+    aspect-ratio: 1;
+    border-radius: 50%;
+}
+
+.fe-picker-frame img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.fe-picker-busy {
+    position: absolute;
+    inset: auto 0 0;
+    padding: 4px;
+    text-align: center;
+    background: rgba(22, 17, 46, 0.72);
+    color: var(--plate);
+    font-size: var(--t-micro);
+}
+
+.fe-picker-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--s-2);
+    flex: 1 1 12rem;
+}
+
+.fe-picker-actions .fe-hint {
+    flex-basis: 100%;
+}
+
+/* The real file input stays focusable but invisible; its label is the visible button. */
+.fe-file {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    overflow: hidden;
+}
+
+.fe-file:focus-visible + label {
+    outline: 3px solid var(--focus);
+    outline-offset: 2px;
+}
+
+.fe-file + label {
+    cursor: pointer;
+}
+
+.fe-file:disabled + label {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* ------------------------------------------------------------------ dish image, avatar */
+
+.fe-dish-img {
+    position: relative;
+    aspect-ratio: 4 / 3;
+    overflow: hidden;
+    background: color-mix(in srgb, var(--saffron) 14%, var(--surface));
+    flex: none;
+}
+
+.fe-dish-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.fe-dish-img--empty {
+    display: grid;
+    place-items: center;
+    color: color-mix(in srgb, var(--saffron) 70%, var(--text));
+}
+
+.fe-dish-img--empty svg {
+    width: 40%;
+    max-width: 72px;
+}
+
+.fe-avatar {
+    flex: none;
+    border-radius: 50%;
+    object-fit: cover;
+    background: var(--surface-2);
+}
+
+.fe-avatar--initials {
+    display: inline-grid;
+    place-items: center;
+    font-family: var(--display);
+    font-weight: 600;
+    color: var(--ink);
+    background: color-mix(in srgb, var(--saffron) 45%, var(--surface));
+}
+
+/* ------------------------------------------------------------------ directory */
+
+.fe-mine {
+    display: grid;
+    gap: var(--s-3);
+}
+
+.fe-mine-list {
+    list-style: none;
+    display: grid;
+    gap: var(--s-3);
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr));
+}
+
+.fe-mine-card {
+    display: grid;
+    gap: var(--s-2);
+    padding: var(--s-4);
+    border-radius: var(--r-md);
+    background: var(--surface);
+    box-shadow: var(--shadow-1);
+    text-decoration: none;
+    min-height: 44px;
+}
+
+.fe-mine-card:hover {
+    box-shadow: var(--shadow-2);
+}
+
+.fe-mine-name {
+    font-family: var(--display);
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
+.fe-mine-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s-2);
+    font-size: var(--t-small);
+    font-weight: 600;
+}
+
+/* Only the "Manage" word reads as a link; the role chip stays a plain chip. */
+.fe-mine-meta > span:last-child {
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+}
+
+.fe-cards {
+    list-style: none;
+    display: grid;
+    gap: var(--s-5);
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 17rem), 1fr));
+}
+
+.fe-card {
+    position: relative;
+    display: grid;
+    grid-template-rows: auto 1fr;
+    height: 100%;
+    border-radius: var(--r-md);
+    overflow: hidden;
+    background: var(--surface);
+    box-shadow: var(--shadow-1);
+    transition:
+        box-shadow var(--dur-state) var(--ease-ui),
+        transform var(--dur-state) var(--ease-ui);
+}
+
+.fe-card:hover {
+    box-shadow: var(--shadow-2);
+    transform: translateY(-2px);
+}
+
+.fe-card:focus-within {
+    outline: 3px solid var(--focus);
+    outline-offset: 2px;
+}
+
+.fe-card-cover {
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    background: var(--surface-2);
+}
+
+.fe-card-cover img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.fe-card-body {
+    display: grid;
+    gap: var(--s-2);
+    padding: var(--s-4);
+    align-content: start;
+}
+
+.fe-card-title {
+    font-size: var(--t-h2);
+}
+
+.fe-card-title a {
+    text-decoration: none;
+}
+
+/* The whole card is the link target; focus is shown on the card. */
+.fe-stretch::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+}
+
+.fe-stretch:focus-visible {
+    outline: none;
+}
+
+.fe-card-where {
+    font-size: var(--t-small);
+    color: var(--text-soft);
+}
+
+.fe-card-tag {
+    font-size: var(--t-small);
+    color: var(--text-faint);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.fe-card-tables {
+    display: flex;
+    align-items: center;
+    gap: var(--s-2);
+    font-size: var(--t-small);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+.fe-card-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-2);
+}
+
+.fe-card-badges:empty {
+    display: none;
+}
+
+/* Floor-plan art for restaurants without a cover photo. */
+.fe-cover-art {
+    width: 100%;
+    height: 100%;
+}
+
+.fe-cover-art .bg {
+    fill: color-mix(in srgb, var(--saffron) 10%, var(--surface-2));
+}
+
+.fe-cover-art .table {
+    fill: var(--surface);
+    stroke: var(--line-strong);
+    stroke-width: 1.5;
+}
+
+.fe-cover-art .table.hero {
+    fill: var(--saffron);
+    stroke: none;
+}
+
+.fe-cover-art .chair {
+    fill: var(--text-faint);
+    opacity: 0.55;
+}
+
+/* ------------------------------------------------------------------ manage: tabs, panels */
+
+.fe-tabs {
+    display: flex;
+    gap: var(--s-1);
+    overflow-x: auto;
+    scrollbar-width: thin;
+    border-bottom: 1px solid var(--hair);
+    margin: 0 calc(-1 * var(--gutter));
+    padding: 0 var(--gutter);
+}
+
+.fe-tab {
+    position: relative;
+    flex: none;
+    min-height: 48px;
+    padding: 0 var(--s-3);
+    border: 0;
+    background: transparent;
+    color: var(--text-soft);
+    font-weight: 600;
+    font-size: var(--t-small);
+    display: inline-flex;
+    align-items: center;
+    gap: var(--s-2);
+}
+
+.fe-tab:hover {
+    color: var(--text);
+}
+
+.fe-tab[aria-selected="true"] {
+    color: var(--text);
+}
+
+.fe-tab[aria-selected="true"]::after {
+    content: "";
+    position: absolute;
+    left: var(--s-3);
+    right: var(--s-3);
+    bottom: 0;
+    height: 3px;
+    border-radius: 3px 3px 0 0;
+    background: var(--accent);
+}
+
+.fe-tab:focus-visible {
+    outline-offset: -3px;
+}
+
+.fe-tab-badge {
+    min-width: 20px;
+    padding: 0 6px;
+    border-radius: var(--r-pill);
+    background: var(--accent);
+    color: var(--on-accent);
+    font-size: var(--t-micro);
+    font-variant-numeric: tabular-nums;
+}
+
+.fe-panel {
+    min-width: 0;
+}
+
+.fe-panel:focus-visible {
+    outline-offset: 6px;
+}
+
+/* Overview stats */
+.fe-stats {
+    margin: 0;
+    display: grid;
+    gap: var(--s-3);
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 9.5rem), 1fr));
+}
+
+.fe-stats > div {
+    display: grid;
+    gap: var(--s-1);
+    align-content: start;
+    padding: var(--s-4);
+    border-radius: var(--r-md);
+    background: var(--surface);
+    box-shadow: var(--shadow-1);
+    min-width: 0;
+}
+
+.fe-stats dt {
+    font-size: var(--t-label);
+    font-weight: 600;
+    color: var(--text-soft);
+}
+
+.fe-stats dd {
+    margin: 0;
+    font-family: var(--money);
+    font-weight: 600;
+    font-size: var(--t-stat);
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
+}
+
+.fe-stat-wide dd {
+    font-size: var(--t-stat);
+}
+
+/* Money needs the room: on phones the "Paid today" tile spans the row. */
+@media (max-width: 559px) {
+    .fe-stats > .fe-stat-wide {
+        grid-column: 1 / -1;
+    }
+}
+
+.fe-stat-note {
+    font-size: var(--t-micro);
+    color: var(--text-faint);
+}
+
+.fe-todo ul,
+.fe-share {
+    list-style: none;
+    display: grid;
+    gap: var(--s-2);
+}
+
+.fe-todo {
+    display: grid;
+    gap: var(--s-3);
+}
+
+.fe-todo li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s-2) var(--s-4);
+    padding: var(--s-3) 0;
+    border-top: 1px solid var(--hair);
+    font-size: var(--t-small);
+}
+
+.fe-share p {
+    color: var(--text-soft);
+    font-size: var(--t-small);
+}
+
+.fe-share-row {
+    display: grid;
+    gap: var(--s-2);
+}
+
+.fe-share-url {
+    overflow-wrap: anywhere;
+}
+
+/* Overview: sales for a period, with small charts (charts.tsx). Chart colours were checked with
+   the dataviz palette validator: each mark is at least 3:1 on the card, and the public and
+   confidential pair stays apart under colour blindness, in both themes. Public is purple and
+   confidential teal, the cyan family of the Confidential lock. */
+.fe {
+    --fe-chart-col: #6e54ff;
+    --fe-chart-col-hi: #4b31db;
+    --fe-chart-public: #6e54ff;
+    --fe-chart-private: #008da6;
+}
+
+@media (prefers-color-scheme: dark) {
+    .fe {
+        --fe-chart-col: #8b76ff;
+        --fe-chart-col-hi: #ad9eff;
+        --fe-chart-public: #8b76ff;
+        --fe-chart-private: #1e9ab0;
+    }
+}
+
+.fe-sales {
+    display: grid;
+    gap: var(--s-4);
+    min-width: 0;
+}
+
+.fe-sales-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s-2) var(--s-4);
+}
+
+/* Four periods fit on one line at 360px. */
+.fe-sales-head .segmented-option span {
+    padding: 0 var(--s-3);
+}
+
+.fe-sales-body {
+    min-width: 0;
+    transition: opacity var(--dur-state) var(--ease-ui);
+}
+
+.fe-sales-body.is-stale {
+    opacity: 0.55;
+}
+
+.fe-sales-card {
+    display: grid;
+    gap: var(--s-3);
+    align-content: start;
+    padding: var(--s-4);
+    border-radius: var(--r-md);
+    background: var(--surface);
+    box-shadow: var(--shadow-1);
+    min-width: 0;
+}
+
+.fe-sales-charts {
+    display: grid;
+    gap: var(--s-4);
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+}
+
+.fe-chart {
+    margin: 0;
+    display: grid;
+    gap: var(--s-2);
+    min-width: 0;
+}
+
+.fe-chart-title {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: var(--t-h3);
+}
+
+/* One line, always the same height, so pointing at columns doesn't move the chart. */
+.fe-chart-readout {
+    min-height: 1.5em;
+    font-size: var(--t-small);
+    color: var(--text-soft);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.fe-chart-readout strong {
+    color: var(--text);
+    font-family: var(--money);
+    font-variant-numeric: tabular-nums;
+}
+
+.fe-chart-plot {
+    min-width: 0;
+    border-radius: var(--r-xs);
+    touch-action: pan-y;
+}
+
+.fe-chart-plot:focus-visible {
+    outline: 3px solid var(--focus);
+    outline-offset: 4px;
+}
+
+.fe-chart-plot svg {
+    display: block;
+    overflow: visible;
+}
+
+.fe-chart-grid,
+.fe-chart-base {
+    stroke: var(--hair);
+    stroke-width: 1;
+    shape-rendering: crispEdges;
+}
+
+.fe-chart-base {
+    stroke: var(--line);
+}
+
+.fe-chart-hit {
+    fill: transparent;
+}
+
+.fe-chart-col {
+    fill: var(--fe-chart-col);
+    transition: fill var(--dur-ui) var(--ease-ui);
+}
+
+.fe-chart .is-active .fe-chart-col {
+    fill: var(--fe-chart-col-hi);
+}
+
+.fe-chart .is-active .fe-chart-hit {
+    fill: var(--surface-2);
+}
+
+.fe-chart-axis,
+.fe-chart-tick {
+    fill: var(--text-faint);
+    font-size: 12px;
+    font-family: var(--body);
+    font-variant-numeric: tabular-nums;
+}
+
+.fe-chart-peak {
+    fill: var(--text-soft);
+    font-size: 12px;
+    font-weight: 600;
+    font-family: var(--money);
+    font-variant-numeric: tabular-nums;
+}
+
+.fe-chart-details summary {
+    cursor: pointer;
+    width: fit-content;
+    font-size: var(--t-micro);
+    font-weight: 600;
+    color: var(--text-soft);
+}
+
+.fe-chart-details[open] summary {
+    margin-bottom: var(--s-2);
+}
+
+.fe-chart-table,
+.fe-top {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--t-small);
+}
+
+.fe-chart-table th,
+.fe-chart-table td,
+.fe-top th,
+.fe-top td {
+    padding: var(--s-2) 0;
+    border-top: 1px solid var(--hair);
+    text-align: left;
+    font-weight: 400;
+}
+
+.fe-chart-table td,
+.fe-top td {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    padding-left: var(--s-3);
+}
+
+.fe-chart-table thead th,
+.fe-top thead th {
+    border-top: 0;
+    font-size: var(--t-label);
+    font-weight: 600;
+    color: var(--text-soft);
+}
+
+.fe-top thead th + th {
+    text-align: right;
+}
+
+.fe-top tbody th {
+    display: grid;
+    gap: 6px;
+}
+
+.fe-top-name {
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
+/* A thin bar per dish: its quantity against the best seller's. */
+.fe-top-bar {
+    display: block;
+    height: 6px;
+}
+
+.fe-top-bar span {
+    display: block;
+    height: 100%;
+    min-width: 4px;
+    border-radius: 0 4px 4px 0;
+    background: var(--fe-chart-col);
+}
+
+/* Public and confidential money: one bar, a 2px gap between the parts, and a legend with amounts. */
+.fe-paysplit {
+    display: grid;
+    gap: var(--s-3);
+}
+
+.fe-paysplit-bar {
+    display: flex;
+    gap: 2px;
+    height: 12px;
+}
+
+.fe-paysplit-seg {
+    flex-basis: 0;
+    min-width: 4px;
+}
+
+.fe-paysplit-seg:first-child {
+    border-radius: 4px 0 0 4px;
+}
+
+.fe-paysplit-seg:last-child {
+    border-radius: 0 4px 4px 0;
+}
+
+.fe-paysplit-seg:only-child {
+    border-radius: 4px;
+}
+
+.fe-paysplit-seg.is-public,
+.fe-paysplit-key.is-public {
+    background: var(--fe-chart-public);
+}
+
+.fe-paysplit-seg.is-private,
+.fe-paysplit-key.is-private {
+    background: var(--fe-chart-private);
+}
+
+.fe-paysplit-legend {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-2) var(--s-6);
+    font-size: var(--t-small);
+}
+
+.fe-paysplit-legend li {
+    display: flex;
+    align-items: center;
+    gap: var(--s-2);
+}
+
+.fe-paysplit-key {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    flex-shrink: 0;
+}
+
+.fe-paysplit-label {
+    color: var(--text-soft);
+}
+
+.fe-paysplit-share {
+    color: var(--text-faint);
+    font-size: var(--t-micro);
+}
+
+.fe-turn {
+    margin: 0;
+}
+
+.fe-turn dd {
+    font-size: var(--t-h2);
+}
+
+@media (forced-colors: active) {
+    .fe-chart-col,
+    .fe-paysplit-seg,
+    .fe-paysplit-key,
+    .fe-top-bar span {
+        fill: CanvasText;
+        background: CanvasText;
+        forced-color-adjust: none;
+    }
+}
+
+/* Menu admin */
+.fe-menu-cat {
+    display: grid;
+    gap: var(--s-2);
+}
+
+.fe-menu-rows {
+    list-style: none;
+    display: grid;
+    border-radius: var(--r-md);
+    background: var(--surface);
+    box-shadow: var(--shadow-1);
+    overflow: hidden;
+}
+
+.fe-menu-row {
+    display: grid;
+    grid-template-columns: 72px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--s-3) var(--s-4);
+    padding: var(--s-3) var(--s-4);
+    border-top: 1px solid var(--hair);
+}
+
+.fe-menu-row:first-child {
+    border-top: 0;
+}
+
+.fe-menu-row.is-off .fe-thumb,
+.fe-menu-row.is-off .fe-menu-name {
+    opacity: 0.55;
+}
+
+.fe-thumb {
+    width: 72px;
+    border-radius: var(--r-sm);
+}
+
+.fe-menu-main {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+}
+
+.fe-menu-name {
+    display: flex;
+    align-items: center;
+    gap: var(--s-2);
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
+.fe-menu-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-1) var(--s-3);
+    font-size: var(--t-small);
+    color: var(--text-soft);
+}
+
+.fe-menu-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--s-2);
+}
+
+.fe-reorder {
+    display: inline-flex;
+    gap: 4px;
+}
+
+@media (max-width: 640px) {
+    .fe-menu-row {
+        grid-template-columns: 64px minmax(0, 1fr);
+    }
+
+    .fe-thumb {
+        width: 64px;
+    }
+
+    .fe-menu-actions {
+        grid-column: 1 / -1;
+        flex-wrap: wrap;
+        justify-content: space-between;
+    }
+}
+
+/* Tables admin */
+.fe-table-grid {
+    list-style: none;
+    display: grid;
+    gap: var(--s-3);
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 11rem), 1fr));
+}
+
+.fe-table-card {
+    display: grid;
+    gap: var(--s-3);
+    align-content: start;
+    padding: var(--s-4);
+    border-radius: var(--r-md);
+    background: var(--surface);
+    box-shadow: var(--shadow-1);
+}
+
+.fe-table-card.is-occupied {
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--saffron) 60%, transparent);
+}
+
+.fe-table-card.is-closed,
+.fe-table-card.is-reserved {
+    background: var(--surface-2);
+}
+
+.fe-table-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s-2);
+}
+
+.fe-table-label {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: 1.5rem;
+    line-height: 1;
+}
+
+.fe-table-controls {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: var(--s-2);
+}
+
+.fe-label-sm + select,
+.fe-table-controls input {
+    min-height: 40px;
+}
+
+.fe .fe-table-controls select {
+    padding-left: var(--s-2);
+    padding-right: 28px;
+    font-size: var(--t-small);
+    background-position:
+        calc(100% - 15px) 50%,
+        calc(100% - 10px) 50%;
+}
+
+.fe-seat-ring {
+    display: flex;
+    align-items: center;
+    gap: var(--s-3);
+    font-size: var(--t-small);
+    color: var(--text-soft);
+}
+
+.fe-seat-ring .t {
+    fill: var(--surface-2);
+    stroke: var(--line-strong);
+}
+
+.fe-table-card.is-occupied .fe-seat-ring .t {
+    fill: var(--saffron);
+    stroke: none;
+}
+
+.fe-seat-ring .c {
+    fill: var(--text-faint);
+}
+
+/* Kitchen board */
+.fe-live-note {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--s-2);
+}
+
+.fe-board {
+    display: grid;
+    gap: var(--s-4);
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+    align-items: start;
+}
+
+.fe-col {
+    display: grid;
+    gap: var(--s-3);
+    padding: var(--s-3);
+    border-radius: var(--r-md);
+    background: var(--surface-2);
+    min-width: 0;
+}
+
+.fe-col-head {
+    font-size: var(--t-small);
+    font-family: var(--body);
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    padding: var(--s-1) var(--s-1) 0;
+}
+
+.fe-col--paid .fe-col-head::before,
+.fe-col--cooking .fe-col-head::before,
+.fe-col--ready .fe-col-head::before,
+.fe-col--served .fe-col-head::before {
+    content: "";
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-right: var(--s-2);
+}
+
+/* Paid and waiting: the kitchen's next action, so purple like its tickets' top edge. */
+.fe-col--paid .fe-col-head::before {
+    background: var(--accent);
+}
+
+.fe-col--cooking .fe-col-head::before {
+    background: var(--warn-bar);
+}
+
+.fe-col--ready .fe-col-head::before {
+    background: var(--verified);
+}
+
+.fe-col--served .fe-col-head::before {
+    background: var(--line-strong);
+}
+
+.fe-col-empty {
+    font-size: var(--t-micro);
+    color: var(--text-faint);
+    padding: 0 var(--s-1) var(--s-2);
+}
+
+.fe-tickets {
+    list-style: none;
+    display: grid;
+    gap: var(--s-3);
+}
+
+.fe-ticket {
+    display: grid;
+    gap: var(--s-3);
+    padding: var(--s-4);
+    border-radius: var(--r-sm);
+    background: var(--surface);
+    box-shadow: var(--shadow-1), inset 0 4px 0 var(--accent);
+}
+
+.fe-col--cooking .fe-ticket {
+    box-shadow: var(--shadow-1), inset 0 4px 0 var(--warn-bar);
+}
+
+.fe-col--ready .fe-ticket {
+    box-shadow: var(--shadow-1), inset 0 4px 0 var(--verified);
+}
+
+.fe-col--served .fe-ticket {
+    box-shadow: var(--shadow-1), inset 0 4px 0 var(--line-strong);
+    opacity: 0.85;
+}
+
+.fe-ticket.is-late {
+    box-shadow: 0 0 0 2px var(--error), inset 0 4px 0 var(--error);
+}
+
+.fe-ticket-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--s-2);
+}
+
+.fe-ticket-table {
+    display: grid;
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: 1.75rem;
+    line-height: 1;
+}
+
+.fe-ticket-cap {
+    font-family: var(--body);
+    font-size: var(--t-micro);
+    color: var(--text-faint);
+    font-weight: 600;
+    margin-bottom: 2px;
+}
+
+.fe-ticket-meta {
+    display: grid;
+    justify-items: end;
+    text-align: right;
+    font-size: var(--t-micro);
+    color: var(--text-soft);
+    font-variant-numeric: tabular-nums;
+}
+
+.fe-late {
+    color: var(--error);
+    font-weight: 700;
+}
+
+.fe-ticket-items {
+    list-style: none;
+    display: grid;
+    gap: 2px;
+    font-size: var(--t-small);
+}
+
+.fe-ticket-chef,
+.fe-ticket-wait {
+    font-size: var(--t-micro);
+    color: var(--text-faint);
+}
+
+.fe-awaiting {
+    display: grid;
+    gap: var(--s-2);
+}
+
+.fe-await-list {
+    list-style: none;
+    display: grid;
+}
+
+.fe-await-list li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--s-1) var(--s-4);
+    padding: var(--s-3) 0;
+    border-top: 1px solid var(--hair);
+    font-size: var(--t-small);
+}
+
+.fe-await-list li > span:first-child {
+    flex: 1 1 14rem;
+}
+
+/* Chefs admin */
+.fe-chef-admin {
+    list-style: none;
+    display: grid;
+    border-radius: var(--r-md);
+    background: var(--surface);
+    box-shadow: var(--shadow-1);
+}
+
+.fe-chef-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--s-3) var(--s-4);
+    padding: var(--s-4);
+    border-top: 1px solid var(--hair);
+}
+
+.fe-chef-row:first-child {
+    border-top: 0;
+}
+
+.fe-chef-main {
+    flex: 1 1 12rem;
+    min-width: 0;
+}
+
+.fe-chef-name {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: var(--t-h3);
+}
+
+.fe-chef-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--s-3);
+}
+
+/* Staff table */
+.fe-table-wrap {
+    overflow-x: auto;
+    border-radius: var(--r-md);
+    background: var(--surface);
+    box-shadow: var(--shadow-1);
+}
+
+.fe-data {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--t-small);
+}
+
+.fe-data th,
+.fe-data td {
+    padding: var(--s-3) var(--s-4);
+    text-align: left;
+    border-top: 1px solid var(--hair);
+    vertical-align: middle;
+}
+
+.fe-data thead th {
+    border-top: 0;
+    border-bottom: 1px solid var(--line-strong);
+    font-size: var(--t-micro);
+    color: var(--text-faint);
+}
+
+.fe-td-action {
+    text-align: right;
+    white-space: nowrap;
+}
+
+@media (max-width: 560px) {
+    /* Stack the staff table into cards on phones. */
+    .fe-data thead {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+    }
+
+    .fe-data tr {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 2px var(--s-3);
+        padding: var(--s-3) var(--s-4);
+        border-top: 1px solid var(--hair);
+    }
+
+    .fe-data td {
+        padding: 0;
+        border: 0;
+    }
+
+    .fe-data td:first-child {
+        font-weight: 600;
+    }
+
+    .fe-td-action {
+        grid-column: 2;
+        grid-row: 1 / span 2;
+        align-self: center;
+    }
+}
+
+/* Payments (the owner's money view) */
+.fe-money-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-2);
+}
+
+.fe-money-list {
+    list-style: none;
+    display: grid;
+    gap: var(--s-3);
+}
+
+.fe-money-row {
+    display: grid;
+    gap: var(--s-1);
+    padding: var(--s-4);
+    border-radius: var(--r-md);
+    background: var(--surface);
+    box-shadow: var(--shadow-1);
+    min-width: 0;
+    font-size: var(--t-small);
+}
+
+.fe-money-row--warn {
+    box-shadow: var(--shadow-1), inset 3px 0 0 var(--warn-bar);
+}
+
+.fe-money-top {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s-2);
+}
+
+.fe-money-amt {
+    font-size: var(--t-h3);
+}
+
+.fe-money-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-2);
+}
+
+.fe-money-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px var(--s-3);
+    font-weight: 600;
+}
+
+.fe-money-meta > span + span::before {
+    content: "·";
+    margin-right: var(--s-3);
+    color: var(--text-faint);
+    font-weight: 400;
+}
+
+.fe-proof {
+    margin-top: var(--s-1);
+    border-top: 1px solid var(--hair);
+}
+
+.fe-proof > summary {
+    cursor: pointer;
+    font-weight: 600;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+}
+
+.fe-proof[open] > summary {
+    margin-bottom: var(--s-2);
+}
+
+.fe-proof > * + * {
+    margin-top: var(--s-3);
+}
+
+.fe-proof-fields {
+    margin: 0;
+    display: grid;
+    gap: var(--s-2) var(--s-5);
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 14rem), 1fr));
+}
+
+.fe-proof-fields div {
+    display: grid;
+    min-width: 0;
+}
+
+.fe-proof-fields dt {
+    font-size: var(--t-label);
+    font-weight: 600;
+    color: var(--text-soft);
+}
+
+.fe-proof-fields dd {
+    margin: 0;
+    min-width: 0;
+}
+
+/* Three money tiles: side by side on wide screens, stacked on phones (fe-stat-wide). */
+.fe-money-stats {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 14rem), 1fr));
+}
+
+/* Settings */
+.fe-settings-section {
+    display: grid;
+    gap: var(--s-4);
+    padding: var(--s-5);
+    border-radius: var(--r-md);
+    background: var(--surface);
+    box-shadow: var(--shadow-1);
+    min-width: 0;
+}
+
+.fe-explain {
+    display: grid;
+    gap: var(--s-3);
+    font-size: var(--t-small);
+    color: var(--text-soft);
+}
+
+.fe-status-line {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--s-2);
+}
+
+/* ------------------------------------------------------------------ drawer */
+
+.fe-drawer {
+    margin: 0 0 0 auto;
+    padding: 0;
+    border: 0;
+    width: min(100%, 520px);
+    max-width: 100%;
+    height: 100dvh;
+    max-height: 100dvh;
+    background: var(--surface);
+    color: var(--text);
+    box-shadow: var(--shadow-pop);
+}
+
+.fe-drawer::backdrop {
+    background: var(--backdrop);
+}
+
+.fe-drawer[open] {
+    animation: fe-slide var(--dur-state) var(--ease-ui);
+}
+
+@keyframes fe-slide {
+    from {
+        transform: translateX(24px);
+        opacity: 0;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .fe-drawer[open] {
+        animation: none;
+    }
+}
+
+.fe-drawer-panel {
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    height: 100%;
+}
+
+.fe-drawer-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s-3);
+    padding: var(--s-4) var(--s-5);
+    border-bottom: 1px solid var(--hair);
+}
+
+.fe-drawer-head h2 {
+    font-size: var(--t-h2);
+}
+
+.fe-drawer-body {
+    overflow-y: auto;
+    padding: var(--s-5);
+    overscroll-behavior: contain;
+}
+
+.fe-drawer-foot {
+    padding: var(--s-4) var(--s-5);
+    border-top: 1px solid var(--hair);
+}
+
+/* ------------------------------------------------------------------ storefront */
+
+.fe-store {
+    max-width: calc(1120px + 2 * var(--gutter));
+    margin: 0 auto;
+    padding: var(--s-5) var(--gutter) 0;
+    display: grid;
+    gap: var(--s-6);
+    min-width: 0;
+}
+
+.fe-hero {
+    display: grid;
+    border-radius: var(--r-lg);
+    overflow: hidden;
+    background: var(--surface);
+    box-shadow: var(--shadow-1);
+}
+
+.fe-hero-cover {
+    width: 100%;
+    height: clamp(160px, 22vw, 280px);
+    overflow: hidden;
+    background: var(--surface-2);
+}
+
+/* No cover photo: a low pattern band, so the name and menu aren't pushed below a blank block. */
+.fe-hero-cover.is-art {
+    height: clamp(96px, 12vw, 150px);
+}
+
+.fe-hero-cover img,
+.fe-hero-cover svg {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center 65%;
+}
+
+.fe-hero-card {
+    display: grid;
+    gap: var(--s-3);
+    padding: var(--s-5) var(--s-6) var(--s-6);
+}
+
+.fe-hero-card h1 {
+    font-size: clamp(1.875rem, 1.6rem + 1.2vw, 2.625rem);
+    line-height: 1.08;
+    letter-spacing: -0.022em;
+}
+
+.fe-facts {
+    margin: var(--s-1) 0 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-3) var(--s-6);
+    padding: var(--s-3) 0;
+    border-top: 1px solid var(--hair);
+    border-bottom: 1px solid var(--hair);
+}
+
+.fe-facts div {
+    display: grid;
+    min-width: 0;
+}
+
+.fe-facts dt {
+    font-size: var(--t-label);
+    font-weight: 600;
+    color: var(--text-soft);
+}
+
+.fe-facts dd {
+    margin: 0;
+    font-size: var(--t-small);
+    overflow-wrap: anywhere;
+}
+
+.fe-about {
+    color: var(--text-soft);
+    font-size: var(--t-small);
+    max-width: 44rem;
+}
+
+@media (max-width: 640px) {
+    .fe-hero-card {
+        padding: var(--s-4);
+    }
+}
+
+.fe-chefs {
+    list-style: none;
+    display: grid;
+    gap: var(--s-4);
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr));
+}
+
+.fe-chef {
+    display: flex;
+    gap: var(--s-4);
+    align-items: flex-start;
+    padding: var(--s-4);
+    border-radius: var(--r-md);
+    background: var(--surface);
+    box-shadow: var(--shadow-1);
+    height: 100%;
+}
+
+.fe-chef > div {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+}
+
+.fe-chef-spec {
+    font-size: var(--t-small);
+    font-weight: 600;
+}
+
+.fe-chef-bio {
+    font-size: var(--t-small);
+    color: var(--text-soft);
+    margin-top: var(--s-1);
+}
+
+.fe-store-layout {
+    display: grid;
+    gap: var(--s-6);
+    align-items: start;
+    min-width: 0;
+}
+
+@media (min-width: 1100px) {
+    .fe-store-layout {
+        grid-template-columns: minmax(0, 1fr) 340px;
+    }
+
+    .fe-cart {
+        position: sticky;
+        top: var(--s-5);
+        max-height: calc(100dvh - 2 * var(--s-5));
+        overflow-y: auto;
+    }
+}
+
+.fe-store-main {
+    display: grid;
+    gap: var(--s-6);
+    min-width: 0;
+}
+
+/* Table picker */
+.fe-pick-grid {
+    list-style: none;
+    display: grid;
+    gap: var(--s-2);
+    grid-template-columns: repeat(auto-fill, minmax(6.25rem, 1fr));
+}
+
+.fe-pick {
+    position: relative;
+    width: 100%;
+    min-height: 88px;
+    display: grid;
+    justify-items: start;
+    align-content: start;
+    gap: var(--s-2);
+    padding: var(--s-3);
+    border: 0;
+    border-radius: var(--r-sm);
+    background: var(--surface);
+    box-shadow: inset 0 0 0 1px var(--line), var(--shadow-btn);
+    color: var(--text);
+    text-align: left;
+    transition:
+        background-color var(--dur-ui) var(--ease-ui),
+        box-shadow var(--dur-ui) var(--ease-ui),
+        transform var(--dur-press) var(--ease-ui);
+}
+
+.fe-pick:hover:not(:disabled) {
+    box-shadow: inset 0 0 0 1px var(--line-strong), var(--shadow-btn);
+}
+
+.fe-pick:active:not(:disabled) {
+    transform: scale(0.98);
+}
+
+.fe-pick-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.fe-pick-label {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: 1.375rem;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+}
+
+.fe-pick-seats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+    max-width: 100%;
+}
+
+.fe-pick-seats > span {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--line-strong);
+}
+
+.fe-pick-meta {
+    font-size: var(--t-micro);
+    color: var(--text-soft);
+}
+
+.fe-pick-status {
+    margin-top: -4px;
+    font-size: var(--t-micro);
+    font-weight: 600;
+    color: var(--text);
+}
+
+.fe-pick[aria-pressed="true"] {
+    background: color-mix(in srgb, var(--accent) 22%, var(--surface));
+    box-shadow: inset 0 0 0 2px var(--text);
+    color: var(--text);
+}
+
+.fe-pick[aria-pressed="true"] .fe-pick-seats > span {
+    background: var(--accent-press);
+}
+
+.fe-pick[aria-pressed="true"] .fe-pick-meta {
+    color: var(--text);
+}
+
+.fe-pick:disabled {
+    cursor: not-allowed;
+    background: var(--surface-2);
+    box-shadow: none;
+    color: var(--text-faint);
+}
+
+.fe-pick:disabled .fe-pick-seats > span {
+    background: transparent;
+    box-shadow: inset 0 0 0 1px var(--line-strong);
+}
+
+.fe-pick:disabled .fe-pick-meta,
+.fe-pick:disabled .fe-pick-status {
+    color: var(--text-soft);
+    font-weight: 400;
+}
+
+.fe-pick:disabled .fe-pick-label {
+    color: var(--text-soft);
+}
+
+/* Menu */
+.fe-catnav {
+    display: flex;
+    gap: var(--s-2);
+    overflow-x: auto;
+    padding-bottom: var(--s-1);
+    scrollbar-width: thin;
+}
+
+.fe-catnav a {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+    padding: 0 var(--s-4);
+    border-radius: var(--r-pill);
+    background: var(--surface);
+    box-shadow: inset 0 0 0 1px var(--line), var(--shadow-btn);
+    font-size: var(--t-small);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.fe-catnav a:hover {
+    background: var(--surface-2);
+}
+
+.fe-ordering-for {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--s-2) var(--s-3);
+    padding: var(--s-2) 0;
+    background: var(--bg);
+    box-shadow: 0 1px 0 var(--hair);
+}
+
+@media (max-width: 899px) {
+    .fe-ordering-for {
+        top: var(--topbar-h);
+    }
+}
+
+.fe-guest-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    padding: 3px;
+    border-radius: var(--r-pill);
+    background: var(--surface-2);
+}
+
+.fe-guest-chip {
+    min-height: 36px;
+    padding: 0 var(--s-4);
+    border: 0;
+    border-radius: var(--r-pill);
+    background: transparent;
+    color: var(--text-soft);
+    font-size: var(--t-small);
+    font-weight: 600;
+    max-width: 12rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.fe-guest-chip:hover {
+    color: var(--text);
+}
+
+.fe-guest-chip[aria-pressed="true"] {
+    background: var(--surface);
+    color: var(--text);
+    box-shadow: var(--shadow-1);
+}
+
+@media (pointer: coarse) {
+    .fe-guest-chip,
+    .fe-catnav a {
+        min-height: 44px;
+    }
+}
+
+.fe-cat {
+    display: grid;
+    gap: var(--s-3);
+    scroll-margin-top: calc(var(--topbar-h) + 64px);
+}
+
+.fe-cat h3 {
+    font-size: var(--t-h2);
+    padding-bottom: var(--s-1);
+}
+
+.fe-dishes {
+    list-style: none;
+    display: grid;
+    gap: var(--s-3);
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 21rem), 1fr));
+}
+
+.fe-dish {
+    height: 100%;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--s-4);
+    align-items: start;
+    padding: var(--s-4);
+    border-radius: var(--r-md);
+    background: var(--surface);
+    box-shadow: var(--shadow-1);
+    transition: box-shadow var(--dur-ui) var(--ease-ui);
+}
+
+.fe-dish.is-in {
+    box-shadow: var(--shadow-1), inset 0 0 0 2px color-mix(in srgb, var(--accent) 70%, transparent);
+}
+
+.fe-dish > .fe-dish-img {
+    width: 112px;
+    aspect-ratio: 1;
+    border-radius: var(--r-sm);
+}
+
+@media (max-width: 399px) {
+    .fe-dish {
+        gap: var(--s-3);
+        padding: var(--s-3);
+    }
+
+    .fe-dish > .fe-dish-img {
+        width: 80px;
+    }
+}
+
+@media (min-width: 640px) {
+    .fe-dish > .fe-dish-img {
+        width: 120px;
+    }
+}
+
+.fe-dish.is-off .fe-dish-img {
+    filter: grayscale(1);
+    opacity: 0.6;
+}
+
+.fe-dish-body {
+    display: grid;
+    gap: var(--s-1);
+    align-content: start;
+    min-width: 0;
+    height: 100%;
+    grid-template-rows: auto auto 1fr auto;
+}
+
+.fe-dish-name {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--s-2);
+    font-size: var(--t-h3);
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+}
+
+.fe-dish-name .fe-veg {
+    margin-top: 3px;
+}
+
+.fe-dish-desc {
+    font-size: var(--t-small);
+    line-height: 1.45;
+    color: var(--text-soft);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.fe-dish-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--s-1) var(--s-3);
+    font-size: var(--t-micro);
+    color: var(--text-soft);
+}
+
+.fe-dish-price {
+    font-size: var(--t-body);
+    color: var(--text);
+}
+
+.fe-dish-cta {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    margin-top: var(--s-2);
+}
+
+/* Add: a soft purple pill; quieter than the cart's primary button, louder than an outline. */
+.btn.fe-add {
+    background: var(--accent-soft);
+    color: var(--text);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent-press) 55%, transparent);
+    max-width: 100%;
+}
+
+/* Long guest names end in an ellipsis; the button's aria-label carries the full text. */
+.fe-add-label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.btn.fe-add:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--accent) 35%, var(--surface));
+}
+
+/* Cart */
+.fe-cart {
+    display: grid;
+    gap: var(--s-4);
+    padding: var(--s-5);
+    border-radius: var(--r-md);
+    background: var(--surface);
+    box-shadow: var(--shadow-2);
+    min-width: 0;
+    scroll-margin-top: calc(var(--topbar-h) + var(--s-4));
+}
+
+.fe-cart:focus-visible {
+    outline: 3px solid var(--focus);
+}
+
+.fe-cart-empty {
+    padding: var(--s-3) 0;
+}
+
+.fe-cart-groups {
+    display: grid;
+    gap: var(--s-3);
+}
+
+.fe-cart-guest {
+    font-size: var(--t-label);
+    font-weight: 600;
+    color: var(--text-soft);
+    padding-bottom: var(--s-1);
+}
+
+.fe-lines {
+    list-style: none;
+    display: grid;
+}
+
+.fe-line {
+    display: grid;
+    gap: var(--s-2);
+    padding: var(--s-2) 0;
+    border-top: 1px solid var(--hair);
+}
+
+.fe-line-name {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--s-3);
+    font-size: var(--t-small);
+    font-weight: 600;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.fe-line-price {
+    flex: none;
+    font-family: var(--money);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--text);
+}
+
+.fe-line-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--s-2);
+}
+
+.fe .fe-line-move {
+    width: auto;
+    flex: 1 1 8rem;
+    min-height: 36px;
+    padding-top: 4px;
+    padding-bottom: 4px;
+    font-size: var(--t-small);
+}
+
+.fe-sum {
+    margin: 0;
+    display: grid;
+    gap: var(--s-1);
+    font-size: var(--t-small);
+    padding-top: var(--s-3);
+    border-top: 1px solid var(--hair);
+}
+
+.fe-sum > div {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--s-3);
+}
+
+.fe-sum dt {
+    color: var(--text-soft);
+}
+
+.fe-sum dd {
+    margin: 0;
+    font-family: var(--money);
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+}
+
+.fe-sum-note dd {
+    font-family: var(--body);
+    font-weight: 400;
+    color: var(--text-faint);
+}
+
+.fe-sum-total {
+    padding-top: var(--s-3);
+    margin-top: var(--s-2);
+    border-top: 1px solid var(--line-strong);
+    font-weight: 700;
+    font-size: var(--t-h3);
+}
+
+.fe-sum-total dd {
+    font-weight: 700;
+    font-size: var(--t-h2);
+}
+
+.fe-sum-total dt {
+    color: var(--text);
+}
+
+.fe-checkout {
+    display: grid;
+    gap: var(--s-4);
+}
+
+.fe-check-row {
+    display: grid;
+    gap: 2px;
+}
+
+.fe-choice {
+    display: grid;
+    gap: var(--s-2);
+}
+
+.fe-choice legend {
+    font-weight: 600;
+    font-size: var(--t-small);
+    margin-bottom: var(--s-2);
+}
+
+.fe-choice-opt {
+    display: flex;
+    gap: var(--s-3);
+    align-items: flex-start;
+    padding: var(--s-3);
+    border-radius: var(--r-sm);
+    box-shadow: inset 0 0 0 1px var(--line-strong);
+    cursor: pointer;
+    font-size: var(--t-small);
+    transition:
+        box-shadow var(--dur-ui) var(--ease-ui),
+        background-color var(--dur-ui) var(--ease-ui);
+}
+
+.fe-choice-opt > span {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+}
+
+.fe-choice-opt input {
+    margin-top: 2px !important;
+}
+
+.fe-choice-opt:has(input:checked) {
+    box-shadow: inset 0 0 0 2px var(--text);
+    background: var(--surface-2);
+}
+
+.fe-choice-opt.is-disabled {
+    cursor: not-allowed;
+    opacity: 0.65;
+}
+
+.fe-choice--inline > .fe-choice-opt {
+    padding: var(--s-2) var(--s-3);
+    align-items: center;
+}
+
+.fe-names summary {
+    cursor: pointer;
+    font-size: var(--t-small);
+    font-weight: 600;
+    min-height: 36px;
+    display: flex;
+    align-items: center;
+}
+
+.fe-names-grid {
+    display: grid;
+    gap: var(--s-3);
+    padding-top: var(--s-2);
+}
+
+.fe-preview {
+    display: grid;
+    gap: var(--s-3);
+}
+
+.fe-share-preview {
+    list-style: none;
+    display: grid;
+    gap: var(--s-1);
+    font-size: var(--t-small);
+    padding: var(--s-3);
+    border-radius: var(--r-sm);
+    background: var(--surface-2);
+}
+
+.fe-share-preview li {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--s-3);
+}
+
+.fe-share-preview li.is-empty {
+    color: var(--error);
+    font-weight: 600;
+}
+
+.fe-checkout-actions {
+    display: grid;
+    gap: var(--s-2);
+}
+
+/* Phone bar: sits above the app's bottom nav. */
+.fe-mobile-bar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: calc(var(--bottomnav-h) + env(safe-area-inset-bottom, 0px));
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s-3);
+    padding: var(--s-2) var(--gutter);
+    background: var(--surface);
+    box-shadow: 0 -1px 0 var(--hair), 0 -8px 24px -12px rgba(29, 27, 51, 0.25);
+    font-weight: 600;
+    font-size: var(--t-small);
+}
+
+@media (min-width: 900px) {
+    .fe-mobile-bar {
+        left: var(--sidebar-w);
+        bottom: 0;
+    }
+}
+
+@media (min-width: 1100px) {
+    .fe-mobile-bar {
+        display: none;
+    }
+}
+
+@media (max-width: 1099px) {
+    .fe-store {
+        padding-bottom: 72px;
+    }
+}
+
+/* ------------------------------------------------------------------ order page */
+
+.fe-order-head {
+    display: grid;
+    gap: var(--s-2);
+}
+
+.fe-order-sub {
+    color: var(--text-soft);
+    font-weight: 400;
+}
+
+/* Cancelled order notice: the button shouldn't stretch across the callout grid. */
+.fe-cancelled {
+    justify-items: start;
+    max-width: 44rem;
+}
+
+.fe-timeline {
+    list-style: none;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: var(--s-2);
+    counter-reset: step;
+}
+
+.fe-timeline li {
+    position: relative;
+    display: grid;
+    justify-items: center;
+    text-align: center;
+    gap: 4px;
+    font-size: var(--t-micro);
+    color: var(--text-faint);
+}
+
+.fe-timeline li::before {
+    content: "";
+    position: absolute;
+    top: 8px;
+    right: 50%;
+    width: calc(100% + var(--s-2));
+    height: 2px;
+    background: var(--hair);
+    z-index: 0;
+}
+
+.fe-timeline li:first-child::before {
+    display: none;
+}
+
+.fe-timeline li.is-done::before,
+.fe-timeline li.is-current::before {
+    background: var(--text-soft);
+}
+
+.fe-tl-dot {
+    position: relative;
+    z-index: 1;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--surface);
+    border: 2px solid var(--line-strong);
+}
+
+.fe-timeline li.is-done .fe-tl-dot {
+    background: var(--text-soft);
+    border-color: var(--text-soft);
+}
+
+.fe-timeline li.is-current .fe-tl-dot {
+    background: var(--accent);
+    border-color: var(--accent-press);
+}
+
+.fe-timeline li.is-current,
+.fe-timeline li.is-done {
+    color: var(--text);
+}
+
+.fe-tl-label {
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
+.fe-tl-time {
+    color: var(--text-faint);
+    font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 480px) {
+    .fe-timeline {
+        grid-template-columns: 1fr;
+        gap: 0;
+    }
+
+    .fe-timeline li {
+        grid-template-columns: 18px 1fr auto;
+        justify-items: start;
+        text-align: left;
+        align-items: center;
+        gap: var(--s-3);
+        padding: 6px 0;
+    }
+
+    .fe-timeline li::before {
+        top: -50%;
+        left: 8px;
+        right: auto;
+        width: 2px;
+        height: 100%;
+    }
+}
+
+.fe-order-grid {
+    display: grid;
+    gap: var(--s-6);
+    align-items: start;
+}
+
+@media (min-width: 1000px) {
+    .fe-order-grid {
+        grid-template-columns: minmax(0, 1fr) 340px;
+    }
+}
+
+.fe-wait {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-5);
+    padding: var(--s-5);
+    border-radius: var(--r-md);
+    background: var(--surface);
+    box-shadow: var(--shadow-1);
+    border-top: 3px solid var(--accent);
+}
+
+.fe-wait-time {
+    display: grid;
+    gap: 2px;
+    flex: 1 1 12rem;
+}
+
+.fe-wait-big {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: var(--t-amount);
+    line-height: 1.1;
+}
+
+.fe-wait-chef {
+    display: flex;
+    gap: var(--s-3);
+    align-items: center;
+    flex: 1 1 14rem;
+    min-width: 0;
+}
+
+.fe-shares {
+    gap: var(--s-4);
+}
+
+.fe-share-list {
+    list-style: none;
+    display: grid;
+    gap: var(--s-3);
+}
+
+.fe-share-row {
+    padding: var(--s-4);
+    border-radius: var(--r-md);
+    background: var(--surface);
+    box-shadow: var(--shadow-1);
+}
+
+.fe-share-row.is-paid {
+    background: color-mix(in srgb, var(--surface) 70%, var(--surface-2));
+}
+
+.fe-share-top {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--s-2) var(--s-4);
+}
+
+.fe-share-label {
+    font-weight: 700;
+    flex: 1 1 8rem;
+    overflow-wrap: anywhere;
+}
+
+.fe-share-amt {
+    font-weight: 600;
+}
+
+.fe-tip {
+    color: var(--text-faint);
+    font-weight: 400;
+    font-size: var(--t-small);
+}
+
+.fe-share-pay {
+    padding-top: var(--s-4);
+    margin-top: var(--s-2);
+    border-top: 1px solid var(--hair);
+}
+
+.fe-receipt {
+    display: grid;
+    gap: var(--s-3);
+    padding: var(--s-5);
+    border-radius: var(--r-md);
+    background: var(--surface);
+    box-shadow: var(--shadow-1);
+}
+
+.fe-items {
+    display: grid;
+    gap: var(--s-3);
+}
+
+.fe-item-lines {
+    list-style: none;
+    display: grid;
+    gap: 4px;
+    font-size: var(--t-small);
+}
+
+.fe-item-lines li {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--s-3);
+}
+
+.fe-split,
+.fe-split-done {
+    display: grid;
+    gap: var(--s-3);
+    padding: var(--s-5);
+    border-radius: var(--r-md);
+    background: var(--surface);
+    box-shadow: var(--shadow-1);
+    justify-items: start;
+}
+
+.fe-split > p,
+.fe-split-done > p {
+    color: var(--text-soft);
+    font-size: var(--t-small);
+}
+
+.fe-split .fe-form {
+    width: 100%;
+}
+
+.fe-friend-rows {
+    list-style: none;
+    display: grid;
+    gap: var(--s-3);
+}
+
+.fe-friend-row {
+    display: grid;
+    gap: var(--s-3);
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+    align-items: end;
+    padding-bottom: var(--s-3);
+    border-bottom: 1px solid var(--hair);
+}
+
+.fe-friend-row > .btn {
+    justify-self: start;
+}
+
+/* ------------------------------------------------------------------ invoice */
+
+.fe-inv-page {
+    max-width: calc(820px + 2 * var(--gutter));
+}
+
+.fe-inv-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: var(--s-2);
+}
+
+.fe-inv-back {
+    margin-right: auto;
+}
+
+/* A tax document stays calm: figures in the money font at the row's own weight. */
+.fe-inv .fe-num {
+    font-weight: inherit;
+}
+
+.fe-inv {
+    display: grid;
+    gap: var(--s-5);
+    padding: clamp(var(--s-4), 4vw, var(--s-7));
+    border-radius: var(--r-sm);
+    background: var(--surface);
+    box-shadow: var(--shadow-1);
+    font-size: var(--t-small);
+    min-width: 0;
+}
+
+.fe-inv-head {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: var(--s-5);
+    padding-bottom: var(--s-4);
+    border-bottom: 2px solid var(--text);
+}
+
+.fe-inv-supplier {
+    display: grid;
+    gap: 2px;
+    flex: 1 1 16rem;
+    min-width: 0;
+}
+
+.fe-inv-name {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: 1.375rem;
+    line-height: 1.2;
+    margin-bottom: var(--s-1);
+}
+
+.fe-inv-ids,
+.fe-inv-meta {
+    margin: var(--s-2) 0 0;
+    display: grid;
+    gap: 2px;
+}
+
+.fe-inv-ids div,
+.fe-inv-meta div {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 var(--s-2);
+}
+
+.fe-inv-ids dt,
+.fe-inv-meta dt {
+    color: var(--text-faint);
+    min-width: 8.5em;
+}
+
+.fe-inv-ids dd,
+.fe-inv-meta dd {
+    margin: 0;
+    overflow-wrap: anywhere;
+    min-width: 0;
+}
+
+.fe-inv-doc {
+    display: grid;
+    align-content: start;
+    flex: 1 1 15rem;
+    min-width: 0;
+}
+
+.fe .fe-inv-title {
+    font-size: 1.5rem;
+    letter-spacing: 0;
+}
+
+.fe-inv-scroll {
+    overflow-x: auto;
+}
+
+.fe-inv-lines {
+    width: 100%;
+    border-collapse: collapse;
+    font-variant-numeric: tabular-nums;
+}
+
+.fe-inv-lines th,
+.fe-inv-lines td {
+    padding: var(--s-2) var(--s-2);
+    text-align: left;
+    border-bottom: 1px solid var(--hair);
+    vertical-align: top;
+}
+
+.fe-inv-lines thead th {
+    font-size: var(--t-micro);
+    color: var(--text-faint);
+    border-bottom: 1px solid var(--line-strong);
+    white-space: nowrap;
+}
+
+.fe-inv-lines .fe-c-r,
+.fe-inv-totals td {
+    text-align: right;
+    white-space: nowrap;
+}
+
+.fe-c-n {
+    width: 2.5em;
+    color: var(--text-faint);
+}
+
+.fe-inv-bottom {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-5);
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.fe-inv-words {
+    display: grid;
+    gap: 2px;
+    flex: 1 1 14rem;
+    min-width: 0;
+}
+
+.fe-inv-words .fe-label-sm:not(:first-child) {
+    margin-top: var(--s-3);
+}
+
+.fe-inv-words-text {
+    font-weight: 600;
+}
+
+.fe-inv-totals {
+    flex: 0 1 20rem;
+    border-collapse: collapse;
+    font-variant-numeric: tabular-nums;
+    min-width: min(100%, 16rem);
+}
+
+.fe-inv-totals th,
+.fe-inv-totals td {
+    padding: 4px 0;
+}
+
+.fe-inv-totals th {
+    text-align: left;
+    font-weight: 400;
+    color: var(--text-soft);
+    padding-right: var(--s-4);
+}
+
+.fe-inv-total th,
+.fe-inv-total td {
+    padding-top: var(--s-2);
+    border-top: 2px solid var(--text);
+    font-weight: 700;
+    color: var(--text);
+    font-size: var(--t-body);
+}
+
+.fe-inv-payments {
+    display: grid;
+    gap: var(--s-2);
+}
+
+.fe-inv-payments ul {
+    list-style: none;
+    display: grid;
+}
+
+.fe-inv-payments li {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px var(--s-4);
+    padding: var(--s-2) 0;
+    border-top: 1px solid var(--hair);
+}
+
+.fe-inv-payments li > span:first-child {
+    font-weight: 600;
+    flex: 1 1 8rem;
+}
+
+.fe-inv-how {
+    flex: 1 1 14rem;
+}
+
+.fe-inv-foot {
+    display: grid;
+    gap: 2px;
+    padding-top: var(--s-4);
+    border-top: 1px solid var(--hair);
+    font-size: var(--t-micro);
+    color: var(--text-faint);
+}
+
+.fe-inv-link {
+    overflow-wrap: anywhere;
+    font-size: var(--t-micro);
+}
+
+/* Print: A4, the invoice alone, no app chrome. :has() scopes this to the invoice page, so
+   printing any other page is unaffected. */
+@media print {
+    @page {
+        size: A4;
+        margin: 14mm 12mm;
+    }
+
+    body:has(.fe-inv-page) {
+        background: #fff !important;
+    }
+
+    body:has(.fe-inv-page) * {
+        visibility: hidden;
+    }
+
+    body:has(.fe-inv-page) .fe-inv,
+    body:has(.fe-inv-page) .fe-inv * {
+        visibility: visible;
+    }
+
+    body:has(.fe-inv-page) .fe-inv {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        padding: 0;
+        box-shadow: none;
+        border-radius: 0;
+        color: #000;
+        background: #fff;
+        font-size: 10.5pt;
+        --text: #000;
+        --text-soft: #222;
+        --text-faint: #444;
+        --hair: #bbb;
+        --line-strong: #666;
+        --surface: #fff;
+    }
+
+    .fe-noprint {
+        display: none !important;
+    }
+
+    .fe-inv a {
+        color: #000;
+        text-decoration: none;
+    }
+
+    .fe-inv-lines tr,
+    .fe-inv-totals,
+    .fe-inv-payments li {
+        break-inside: avoid;
+    }
+
+    .fe-inv-scroll {
+        overflow: visible;
+    }
+}
+
+/* ------------------------------------------------------------------ motion */
+
+@media (prefers-reduced-motion: reduce) {
+    .fe *,
+    .fe *::before,
+    .fe *::after {
+        transition-duration: 0ms !important;
+        animation-duration: 0ms !important;
+    }
+}
+
+.fe-inv-how a {
+    white-space: nowrap;
+}
+
+@media (max-width: 480px) {
+    .fe-inv-lines th,
+    .fe-inv-lines td {
+        padding: 6px 4px;
+        font-size: var(--t-micro);
+    }
+
+    .fe-inv-lines .fe-mono {
+        font-size: var(--t-micro);
+    }
+}
+
+.fe-inv-sac-inline {
+    display: none;
+}
+
+/* Phones: the # and SAC columns go (SAC moves under the dish name) and headings may wrap, so the
+   amounts fit without sideways scrolling. Screen only: the printed invoice keeps every column. */
+@media screen and (max-width: 480px) {
+    .fe-inv-lines .fe-c-n,
+    .fe-inv-lines .fe-c-sac {
+        display: none;
+    }
+
+    .fe-inv-sac-inline {
+        display: block;
+        color: var(--text-faint);
+    }
+
+    .fe-inv-lines thead th {
+        white-space: normal;
+    }
+}

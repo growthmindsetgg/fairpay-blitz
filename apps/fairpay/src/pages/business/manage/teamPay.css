@@ -1,0 +1,79 @@
+/* Team pay and My pay (manage/TeamPayTab.tsx, manage/MyPayTab.tsx). Builds on business.css. */
+
+/* The payroll escrow is part 2: a quiet placeholder, never a number. */
+.fe-team-cards > .fe-team-soon {
+    background: transparent;
+    box-shadow: none;
+    border: 1px dashed var(--line-strong);
+}
+
+.fe-team-soon dd {
+    font-family: inherit;
+    font-size: var(--t-body);
+    color: var(--text-soft);
+}
+
+.fe-team-to {
+    overflow-wrap: anywhere;
+}
+
+.fe-team-public {
+    display: flex;
+    gap: var(--s-2);
+    align-items: flex-start;
+    margin: 0;
+}
+
+.fe-team-public svg {
+    flex: none;
+    margin-top: 0.15em;
+}
+
+.fe-team-table .fe-td-action {
+    white-space: nowrap;
+}
+
+/* Payroll escrow (manage/EscrowPanel.tsx, manage/MyEscrow.tsx). */
+.fe-escrow-shift-form {
+    display: grid;
+    gap: var(--s-3);
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr));
+    align-items: end;
+}
+
+.fe-escrow-shift-form .fe-escrow-note {
+    grid-column: span 2;
+}
+
+@media (max-width: 559px) {
+    .fe-escrow-shift-form .fe-escrow-note {
+        grid-column: 1 / -1;
+    }
+}
+
+.fe-escrow-suggest {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-2);
+}
+
+.fe-escrow-approved summary {
+    cursor: pointer;
+    font-weight: 600;
+    padding: var(--s-2) 0;
+}
+
+.fe-escrow-table .fe-num,
+.fe-escrow-table .fe-escrow-nowrap,
+.fe-escrow-name {
+    white-space: nowrap;
+}
+
+.fe-escrow-name .fe-hint,
+.fe-escrow-sub {
+    display: block;
+}
+
+.fe-escrow-table td:nth-child(2) {
+    min-width: 12rem;
+}

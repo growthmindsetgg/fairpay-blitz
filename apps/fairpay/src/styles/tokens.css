@@ -1,0 +1,224 @@
+/* FairPay app tokens (purple theme; values and contrast checks in
+   apps/site/public/brand/BRAND.md). Each colour has one job: purple (--accent) is "do this",
+   green (--verified) is checked on-chain, amber (--warn-*) is money owed or a warning, the ink
+   chip with a cyan lock (--private-chip) is Confidential, red is an error. Saffron appears
+   only in the logo's small share and the FairEats food art. Light first, dark via
+   prefers-color-scheme. */
+
+/* Self-hosted fonts (SIL OFL 1.1, licences in public/fonts). No third-party requests. */
+@font-face {
+    font-family: "Bricolage Grotesque";
+    src: url("/fonts/bricolage-grotesque-5.3.0-latin-opsz-wght.woff2") format("woff2");
+    font-weight: 200 800;
+    font-style: normal;
+    font-display: swap;
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+        U+2000-206F, U+20AC, U+20B9, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+    font-family: "Atkinson Hyperlegible Next";
+    src: url("/fonts/atkinson-next-5.3.0-latin-wght.woff2") format("woff2");
+    font-weight: 200 800;
+    font-style: normal;
+    font-display: swap;
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+        U+2000-206F, U+20AC, U+20B9, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+    font-family: "Atkinson Hyperlegible Mono";
+    src: url("/fonts/atkinson-mono-5.3.0-latin-wght.woff2") format("woff2");
+    font-weight: 200 800;
+    font-style: normal;
+    font-display: swap;
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+        U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* Metric-matched fallbacks keep layout shift small while the web fonts load. */
+@font-face {
+    font-family: "Bricolage Fallback";
+    src: local("Arial");
+    size-adjust: 104%;
+    ascent-override: 92%;
+    descent-override: 24%;
+    line-gap-override: 0%;
+}
+
+@font-face {
+    font-family: "Atkinson Fallback";
+    src: local("Arial");
+    size-adjust: 103%;
+}
+
+:root {
+    /* Brand palette (fixed values) */
+    --ink: #16112e;
+    --plate: #f6f4fe;
+    --saffron: #f2a93b;
+    --basil: #1e7a4e;
+
+    /* Semantic colours, light theme */
+    --bg: #f6f4fe;
+    --surface: #ffffff;
+    --surface-2: #efecfc;
+    --surface-3: #e5e0f8;
+    --text: #16112e;
+    --text-soft: #474065;
+    --text-faint: #5f5980;
+    --hair: rgba(22, 17, 46, 0.1);
+    /* Quiet edge for buttons and tiles whose text already identifies them. */
+    --line: rgba(22, 17, 46, 0.18);
+    /* Control boundaries (inputs, unchecked toggles): 4.1:1 on white, passes WCAG 1.4.11. */
+    --line-strong: #7e78a0;
+    /* Filled buttons and marks. White on it is 4.8:1. As text use --accent-ink. */
+    --accent: #6e54ff;
+    --accent-hover: #5b40f2;
+    --accent-press: #4b31db;
+    --on-accent: #ffffff;
+    --accent-ink: #5536f0;
+    --accent-soft: #ece8ff;
+    --verified: #1e7a4e;
+    --verified-ink: #17633f;
+    --verified-bg: #e1f3e9;
+    /* Confidential: a solid chip with a cyan lock, so it never looks like the purple accent. */
+    --private-chip: #221c3d;
+    --on-private-chip: #ffffff;
+    --private-glyph: #7fdff0;
+    /* Teal for confidential in charts, tints and borders. */
+    --private: #008da6;
+    --private-ink: #0a5361;
+    --private-bg: #e4f4f7;
+    --warn-ink: #7a4a0e;
+    --warn-bar: #b8731a;
+    --warn-bg: #fff2db;
+    --error: #b42318;
+    --error-bg: #fdebe9;
+    --focus: #6e54ff;
+    --selection: #ddd7fe;
+    --logo-main: #5536f0;
+    --logo-word: #16112e;
+    --logo-share: #f2a93b;
+    /* Elevation: 0 = flat outline (lists inside cards), 1 = resting card, 2 = raised (hover, sticky), pop = menus and dialogs. */
+    --shadow-0: 0 0 0 1px var(--hair);
+    --shadow-1: 0 0 0 1px var(--hair), 0 1px 2px rgba(22, 17, 46, 0.04), 0 2px 8px -4px rgba(22, 17, 46, 0.08);
+    --shadow-2: 0 0 0 1px var(--hair), 0 2px 4px rgba(22, 17, 46, 0.04), 0 16px 32px -16px rgba(22, 17, 46, 0.22);
+    --shadow-pop: 0 0 0 1px var(--hair), 0 12px 32px -12px rgba(22, 17, 46, 0.28);
+    --shadow-btn: 0 1px 0 rgba(22, 17, 46, 0.06);
+    --backdrop: rgba(22, 17, 46, 0.42);
+
+    /* Type */
+    --display: "Bricolage Grotesque", "Bricolage Fallback", ui-sans-serif, system-ui, sans-serif;
+    --body: "Atkinson Hyperlegible Next", "Atkinson Fallback", ui-sans-serif, system-ui, sans-serif;
+    --mono: "Atkinson Hyperlegible Mono", ui-monospace, "Cascadia Mono", Menlo, Consolas, monospace;
+    /* Amounts: Bricolage with tabular figures, so columns of prices line up and zeros read as zeros. */
+    --money: var(--display);
+    /* Type scale. Each step has one job:
+       title 26-32 page H1 · h2 18 card and section titles · h3 16 sub-sections
+       body 16 · small 15 controls, rows, secondary text · label 13 field and stat labels (600)
+       micro 13 hints and meta · amount 30-38 hero amounts · stat 24 tile values. */
+    --t-title: clamp(1.625rem, 1.47rem + 0.66vw, 2rem);
+    --t-h2: 1.125rem;
+    --t-h3: 1rem;
+    --t-body: 1rem;
+    --t-small: 0.9375rem;
+    --t-label: 0.8125rem;
+    --t-micro: 0.8125rem;
+    --t-mono: 0.875rem;
+    --t-stat: 1.5rem;
+    --t-amount: clamp(1.875rem, 1.68rem + 0.8vw, 2.375rem);
+
+    /* Spacing (4px base) */
+    --s-1: 4px;
+    --s-2: 8px;
+    --s-3: 12px;
+    --s-4: 16px;
+    --s-5: 24px;
+    --s-6: 32px;
+    --s-7: 48px;
+    --s-8: 64px;
+
+    /* Radii: xs small marks, sm controls and tiles, md cards, lg hero panels, pill buttons and badges. */
+    --r-xs: 6px;
+    --r-sm: 10px;
+    --r-md: 14px;
+    --r-lg: 20px;
+    --r-pill: 999px;
+
+    /* Layout */
+    --sidebar-w: 256px;
+    --topbar-h: 56px;
+    --bottomnav-h: 64px;
+    --content-max: 960px;
+    --gutter: 16px;
+
+    /* Motion */
+    --ease-ui: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    --dur-press: 100ms;
+    --dur-ui: 120ms;
+    --dur-state: 200ms;
+
+    color-scheme: light;
+}
+
+@media (min-width: 640px) {
+    :root {
+        --gutter: 24px;
+    }
+}
+
+@media (min-width: 1024px) {
+    :root {
+        --gutter: 32px;
+    }
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg: #0e0a1c;
+        --surface: #17122e;
+        --surface-2: #211b3e;
+        --surface-3: #2b244d;
+        --text: #f4f1ff;
+        --text-soft: #beb7e0;
+        --text-faint: #a29bc8;
+        --hair: rgba(244, 241, 255, 0.12);
+        --line: rgba(244, 241, 255, 0.22);
+        --line-strong: #7b74a6;
+        --accent-ink: #ad9eff;
+        --accent-soft: #2a2160;
+        --verified: #6fd3a0;
+        --verified-ink: #6fd3a0;
+        --verified-bg: #15302a;
+        --private-chip: #e6e2f5;
+        --on-private-chip: #16112e;
+        --private-glyph: #00718a;
+        --private: #1e9ab0;
+        --private-ink: #8fddeb;
+        --private-bg: #102a33;
+        --warn-ink: #ffc870;
+        --warn-bar: #f2a93b;
+        --warn-bg: #33260f;
+        --error: #ff8a7a;
+        --error-bg: #3a1717;
+        --focus: #ad9eff;
+        --selection: #3b2f85;
+        --logo-main: #ad9eff;
+        --logo-word: #f4f1ff;
+        --shadow-1: 0 0 0 1px var(--hair), 0 1px 2px rgba(0, 0, 0, 0.2);
+        --shadow-2: 0 0 0 1px var(--hair), 0 16px 32px -16px rgba(0, 0, 0, 0.6);
+        --shadow-pop: 0 0 0 1px var(--hair), 0 16px 40px -12px rgba(0, 0, 0, 0.6);
+        --shadow-btn: none;
+        --backdrop: rgba(6, 4, 14, 0.66);
+        color-scheme: dark;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    :root {
+        --dur-press: 0ms;
+        --dur-ui: 0ms;
+        --dur-state: 0ms;
+    }
+}

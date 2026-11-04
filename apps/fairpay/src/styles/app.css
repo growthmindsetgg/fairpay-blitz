@@ -1,0 +1,1117 @@
+/* App shell: sidebar on desktop (>= 900px), top bar + bottom nav on phones. Plus page layouts. */
+
+.shell {
+    min-height: 100dvh;
+}
+
+/* ------------------------------------------------------------------ sidebar (desktop) */
+
+.sidebar {
+    display: none;
+}
+
+@media (min-width: 900px) {
+    .sidebar {
+        display: flex;
+        flex-direction: column;
+        position: fixed;
+        inset: 0 auto 0 0;
+        width: var(--sidebar-w);
+        padding: var(--s-4) var(--s-3);
+        background: var(--surface);
+        box-shadow: 1px 0 0 var(--hair);
+        overflow-y: auto;
+        z-index: 20;
+    }
+}
+
+.brand {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: var(--s-2) var(--s-3);
+    border-radius: var(--r-sm);
+    text-decoration: none;
+    align-self: flex-start;
+}
+
+/* The sidebar's New bill: a quiet surface button with a saffron plus, so the page's own primary
+   action stays the loudest thing on screen. */
+.sidebar-new {
+    margin: var(--s-4) var(--s-2) var(--s-2);
+    justify-content: flex-start;
+    padding-left: var(--s-2);
+    border-radius: var(--r-sm);
+    background: var(--surface);
+    color: var(--text);
+    box-shadow: var(--shadow-1);
+}
+
+.sidebar-new .icon {
+    width: 28px;
+    height: 28px;
+    padding: 5px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: var(--on-accent);
+}
+
+.sidebar-new.btn-primary:hover:not(:disabled) {
+    background: var(--surface-2);
+}
+
+.sidebar-new.btn-primary:active:not(:disabled) {
+    background: var(--surface-3);
+}
+
+.nav-section {
+    display: grid;
+    gap: 2px;
+    margin-top: var(--s-4);
+}
+
+.nav-heading {
+    font-family: var(--body);
+    font-size: var(--t-micro);
+    font-weight: 600;
+    color: var(--text-faint);
+    padding: 0 var(--s-3) var(--s-1);
+    letter-spacing: 0.005em;
+}
+
+.nav-list {
+    list-style: none;
+    display: grid;
+    gap: 2px;
+}
+
+.nav-link {
+    display: flex;
+    align-items: center;
+    gap: var(--s-3);
+    min-height: 44px;
+    padding: var(--s-2) var(--s-3);
+    border-radius: var(--r-sm);
+    text-decoration: none;
+    color: var(--text-soft);
+    font-weight: 500;
+    font-size: var(--t-small);
+    position: relative;
+    transition:
+        background-color var(--dur-ui) var(--ease-ui),
+        color var(--dur-ui) var(--ease-ui);
+}
+
+.nav-link:hover {
+    background: var(--surface-2);
+    color: var(--text);
+}
+
+/* "You are here": a soft purple pill. */
+.nav-link[aria-current="page"] {
+    background: var(--accent-soft);
+    color: var(--accent-ink);
+    font-weight: 600;
+}
+
+.nav-link[aria-current="page"] > .icon {
+    color: var(--accent-ink);
+}
+
+.nav-link:focus-visible {
+    outline-offset: -3px;
+}
+
+.nav-text {
+    display: grid;
+    min-width: 0;
+    flex: 1;
+}
+
+.nav-sub {
+    font-size: var(--t-micro);
+    color: var(--text-faint);
+    font-weight: 400;
+}
+
+.nav-badge {
+    min-width: 20px;
+    padding: 0 6px;
+    border-radius: var(--r-pill);
+    background: var(--accent);
+    color: var(--on-accent);
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 20px;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+}
+
+.sidebar-foot {
+    margin-top: auto;
+    padding-top: var(--s-4);
+    display: grid;
+    gap: var(--s-3);
+}
+
+.sidebar-net {
+    font-size: var(--t-micro);
+    color: var(--text-faint);
+    padding: 0 var(--s-3);
+}
+
+/* ------------------------------------------------------------------ top bar + bottom nav (phone) */
+
+.topbar {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    display: flex;
+    align-items: center;
+    gap: var(--s-2);
+    height: var(--topbar-h);
+    padding: 0 var(--s-2) 0 var(--s-1);
+    background: var(--surface);
+    box-shadow: 0 1px 0 var(--hair);
+}
+
+.topbar .brand {
+    padding: var(--s-2);
+}
+
+.topbar-actions {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: var(--s-1);
+}
+
+.icon-link {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    color: var(--text-soft);
+}
+
+.icon-link:hover {
+    background: var(--surface-2);
+    color: var(--text);
+}
+
+.icon-link .nav-badge {
+    position: absolute;
+    top: 2px;
+    right: 0;
+    min-width: 18px;
+    line-height: 18px;
+    font-size: 11px;
+    padding: 0 4px;
+}
+
+.bottomnav {
+    position: fixed;
+    inset: auto 0 0 0;
+    z-index: 30;
+    height: calc(var(--bottomnav-h) + env(safe-area-inset-bottom, 0px));
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    background: var(--surface);
+    box-shadow: 0 -1px 0 var(--hair);
+}
+
+.bottomnav ul {
+    list-style: none;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    height: var(--bottomnav-h);
+}
+
+.bottomnav a {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    height: 100%;
+    text-decoration: none;
+    color: var(--text-soft);
+    font-size: 12px;
+    font-weight: 600;
+    position: relative;
+    min-width: 0;
+}
+
+.bottomnav a span {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    padding: 0 2px;
+}
+
+/* Each item's icon sits in a 48x28 pill; the current one fills it, Material-style. */
+.bottomnav a > .icon {
+    box-sizing: content-box;
+    width: 22px;
+    height: 22px;
+    padding: 3px 13px;
+    border-radius: var(--r-pill);
+    transition: background-color var(--dur-ui) var(--ease-ui);
+}
+
+.bottomnav a[aria-current="page"] {
+    color: var(--text);
+}
+
+.bottomnav a[aria-current="page"] > .icon {
+    background: var(--accent-soft);
+    color: var(--accent-ink);
+}
+
+.bottomnav .bottomnav-new > .icon,
+.bottomnav .bottomnav-new[aria-current="page"] > .icon {
+    background: var(--accent);
+    color: var(--on-accent);
+    box-shadow: 0 2px 6px -2px rgba(29, 27, 51, 0.35);
+}
+
+.bottomnav a:focus-visible {
+    outline-offset: -4px;
+}
+
+@media (min-width: 900px) {
+    .topbar,
+    .bottomnav {
+        display: none;
+    }
+}
+
+/* ------------------------------------------------------------------ main area */
+
+.main {
+    min-width: 0;
+    padding-bottom: calc(var(--bottomnav-h) + env(safe-area-inset-bottom, 0px) + var(--s-5));
+}
+
+@media (min-width: 900px) {
+    .main {
+        margin-left: var(--sidebar-w);
+        padding-bottom: var(--s-6);
+    }
+}
+
+.content {
+    max-width: calc(var(--content-max) + 2 * var(--gutter));
+    margin: 0 auto;
+    padding: var(--s-5) var(--gutter) 0;
+    display: grid;
+    gap: var(--s-5);
+    min-width: 0;
+}
+
+@media (min-width: 900px) {
+    .content {
+        padding-top: var(--s-6);
+    }
+}
+
+/* An empty live region stays in the page (so it announces later) but takes no gap. */
+.content > [aria-live]:empty {
+    margin-bottom: calc(-1 * var(--s-5));
+}
+
+.stack > [aria-live]:empty {
+    margin-bottom: calc(-1 * var(--s-4));
+}
+
+/* Tiles inside a card sit on the card, not above it. */
+.card .stat {
+    background: var(--surface-2);
+    box-shadow: none;
+}
+
+/* Narrow pages keep the same left edge as every other page; only their column is narrower. */
+.content-narrow > * {
+    max-width: 640px;
+    width: 100%;
+}
+
+.app-foot {
+    max-width: calc(var(--content-max) + 2 * var(--gutter));
+    margin: var(--s-7) auto 0;
+    padding: var(--s-5) var(--gutter) 0;
+    font-size: var(--t-micro);
+    color: var(--text-faint);
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-1) var(--s-4);
+    position: relative;
+}
+
+/* A short rule inside the gutter, not a full-bleed line. */
+.app-foot::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: var(--gutter);
+    right: var(--gutter);
+    border-top: 1px solid var(--hair);
+}
+
+.app-foot a {
+    color: var(--text-soft);
+}
+
+.boot {
+    min-height: 100dvh;
+    display: grid;
+    place-items: center;
+    padding: var(--s-5) var(--gutter);
+}
+
+.boot-inner {
+    display: grid;
+    gap: var(--s-4);
+    justify-items: center;
+    text-align: center;
+    max-width: 28rem;
+}
+
+/* "Starting the server…" while a sleeping free host wakes up (src/main.tsx). */
+.boot-wake {
+    justify-items: center;
+}
+
+/* ------------------------------------------------------------------ page header */
+
+.page-head {
+    display: grid;
+    gap: var(--s-2);
+}
+
+.page-head-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--s-3) var(--s-4);
+}
+
+.page-head-text {
+    display: grid;
+    gap: var(--s-1);
+    min-width: 0;
+    flex: 1 1 18rem;
+}
+
+.page-title {
+    font-size: var(--t-title);
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    overflow-wrap: anywhere;
+}
+
+.page-title-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--s-2) var(--s-3);
+    min-width: 0;
+}
+
+.page-title-row > .badge {
+    margin-top: 4px;
+}
+
+.page-desc {
+    color: var(--text-soft);
+    max-width: 40rem;
+}
+
+.page-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-2);
+}
+
+/* Back link: a 44px target that looks like a small text link with a chevron. */
+.page-back {
+    margin: calc(-1 * var(--s-2)) 0 calc(-1 * var(--s-1)) calc(-1 * var(--s-2));
+}
+
+.page-back a {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--s-1);
+    min-height: 44px;
+    padding: 0 var(--s-2);
+    border-radius: var(--r-pill);
+    font-size: var(--t-small);
+    font-weight: 600;
+    color: var(--text-soft);
+    text-decoration: none;
+}
+
+.page-back a:hover {
+    color: var(--text);
+    background: var(--surface-2);
+}
+
+.section-title {
+    font-size: var(--t-h2);
+    margin-bottom: var(--s-3);
+}
+
+/* ------------------------------------------------------------------ home */
+
+.intro {
+    display: grid;
+    gap: var(--s-5);
+    padding: var(--s-6) 0 var(--s-2);
+}
+
+.intro-title {
+    font-size: clamp(2rem, 1.6rem + 1.8vw, 2.75rem);
+    line-height: 1.06;
+    letter-spacing: -0.024em;
+    max-width: 20ch;
+}
+
+.intro-lead {
+    font-size: 1.125rem;
+    color: var(--text-soft);
+    max-width: 36rem;
+}
+
+/* Wide screens: text left, the example bill right; the points run underneath. */
+@media (min-width: 1024px) {
+    .intro {
+        grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+        column-gap: var(--s-7);
+        align-items: center;
+    }
+    .intro-points {
+        grid-column: 1 / -1;
+    }
+}
+
+.intro-preview {
+    margin: 0;
+    display: grid;
+    gap: var(--s-3);
+    padding: var(--s-5);
+    border-radius: var(--r-lg);
+    background: var(--surface);
+    box-shadow: var(--shadow-2);
+    max-width: 30rem;
+    width: 100%;
+    justify-self: center;
+}
+
+.intro-preview-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s-2);
+}
+
+.intro-preview-title {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: var(--t-h2);
+}
+
+.intro-preview-total {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--s-1) var(--s-3);
+}
+
+.intro-preview-total .money {
+    font-size: var(--t-amount);
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+}
+
+.intro-preview-total .money-unit {
+    font-size: 0.5em;
+}
+
+.intro-preview-rows {
+    list-style: none;
+    display: grid;
+    margin-top: var(--s-1);
+}
+
+.intro-preview-rows li {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    align-items: center;
+    gap: var(--s-1) var(--s-3);
+    min-height: 48px;
+    padding: var(--s-2) 0;
+    border-top: 1px solid var(--hair);
+    font-size: var(--t-small);
+}
+
+.intro-preview-rows .person {
+    display: none;
+}
+
+.intro-preview-rows .badge {
+    justify-self: end;
+}
+
+@media (min-width: 420px) {
+    .intro-preview-rows li {
+        grid-template-columns: auto minmax(0, 1fr) auto 8.5rem;
+    }
+    .intro-preview-rows .person {
+        display: grid;
+    }
+}
+
+.intro-preview-name {
+    font-weight: 600;
+}
+
+.intro-preview figcaption {
+    text-align: right;
+}
+
+.intro-points {
+    list-style: none;
+    display: grid;
+    gap: var(--s-4);
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    border-top: 1px solid var(--hair);
+    padding-top: var(--s-5);
+}
+
+.intro-points li {
+    display: grid;
+    gap: var(--s-1);
+    align-content: start;
+}
+
+.intro-points h2 {
+    font-size: var(--t-h3);
+}
+
+.intro-points p {
+    color: var(--text-soft);
+    font-size: var(--t-small);
+}
+
+.platform-card {
+    display: flex;
+    align-items: center;
+    gap: var(--s-4);
+    text-decoration: none;
+}
+
+.platform-mark {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border-radius: var(--r-sm);
+    background: var(--warn-bg);
+    color: var(--warn-ink);
+    flex-shrink: 0;
+}
+
+/* A merchant's restaurant, first on Home: the saffron edge marks it as their own place. */
+.merchant-home {
+    display: grid;
+    gap: var(--s-2);
+}
+
+.merchant-list {
+    list-style: none;
+    display: grid;
+    gap: var(--s-3);
+}
+
+.merchant-card {
+    flex-wrap: wrap;
+    box-shadow: var(--shadow-1), inset 4px 0 0 var(--accent);
+    color: inherit;
+    transition: box-shadow var(--dur-ui) var(--ease-ui);
+}
+
+.merchant-card:hover {
+    box-shadow: var(--shadow-2), inset 4px 0 0 var(--accent);
+}
+
+.merchant-card .list-title {
+    font-family: var(--display);
+    font-size: var(--t-h2);
+    letter-spacing: -0.01em;
+}
+
+.merchant-kicker {
+    font-size: var(--t-label);
+    font-weight: 600;
+    color: var(--text-soft);
+}
+
+.merchant-go {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--s-1);
+    font-size: var(--t-small);
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+/* Phones: the button text goes under the name, so the name keeps the width. */
+@media (max-width: 479px) {
+    .merchant-go {
+        flex-basis: 100%;
+        padding-left: calc(44px + var(--s-4));
+    }
+}
+
+.merchant-more {
+    font-size: var(--t-small);
+    font-weight: 600;
+    justify-self: start;
+}
+
+/* ------------------------------------------------------------------ list rows with buttons */
+
+/* The row link and its buttons are siblings (a button inside a link is invalid HTML). Narrow lists
+   put the buttons under the row; once the list itself is wide enough they sit at the row's end. */
+.list-actionable {
+    container: action-list / inline-size;
+}
+
+.list-split {
+    border-top: 1px solid var(--hair);
+}
+
+.list > li.list-split:first-child {
+    border-top: 0;
+}
+
+.list-split > .list-row {
+    border-top: 0;
+    min-height: 0;
+    padding-bottom: var(--s-2);
+}
+
+.list-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-2);
+    padding: 0 var(--s-5) var(--s-3);
+}
+
+@media (max-width: 479px) {
+    .list-actions {
+        padding: 0 var(--s-4) var(--s-3);
+    }
+}
+
+@container action-list (min-width: 560px) {
+    .list-split {
+        display: flex;
+        align-items: center;
+    }
+    .list-split > .list-row {
+        flex: 1;
+        min-height: 60px;
+        padding-bottom: var(--s-3);
+    }
+    .list-actions {
+        flex-wrap: nowrap;
+        flex-shrink: 0;
+        padding: var(--s-2) var(--s-5) var(--s-2) 0;
+    }
+    /* One end column for the whole list (empty on rows without buttons), so amounts line up. */
+    .list-has-actions .list-actions {
+        min-width: var(--list-actions-w);
+    }
+    .list-has-actions > li:not(.list-split) > .list-row {
+        padding-right: calc(var(--s-5) + var(--list-actions-w));
+    }
+}
+
+/* Widest set of buttons a row can have, including the actions' own end padding. */
+.list-has-actions {
+    --list-actions-w: 6.5rem;
+}
+
+.list-has-manage {
+    --list-actions-w: 14.5rem;
+}
+
+.list-notice {
+    display: flex;
+    align-items: flex-start;
+    padding: var(--s-2) var(--s-5) var(--s-1);
+}
+
+.list-notice .icon {
+    flex-shrink: 0;
+    margin-top: 3px;
+}
+
+@media (max-width: 479px) {
+    .list-notice {
+        padding: var(--s-2) var(--s-4) var(--s-1);
+    }
+}
+
+/* ------------------------------------------------------------------ bill page */
+
+.bill-layout {
+    display: grid;
+    gap: var(--s-5);
+    align-items: start;
+}
+
+@media (min-width: 1024px) {
+    .bill-layout {
+        grid-template-columns: minmax(0, 1fr) 360px;
+    }
+    .bill-side {
+        position: sticky;
+        top: var(--s-6);
+    }
+}
+
+.bill-total {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-2) var(--s-5);
+    align-items: baseline;
+}
+
+.bill-total-amount {
+    font-family: var(--money);
+    font-weight: 600;
+    font-size: var(--t-amount);
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Hero amounts: the unit drops to roughly body size beside the big figure. */
+.bill-total-amount .money-unit,
+.payshare-amount .money-unit {
+    font-size: 0.5em;
+    letter-spacing: 0.01em;
+}
+
+.progress-bar {
+    height: 8px;
+    border-radius: var(--r-pill);
+    background: var(--surface-2);
+    overflow: hidden;
+}
+
+.progress-bar > span {
+    display: block;
+    height: 100%;
+    background: var(--verified);
+    border-radius: inherit;
+}
+
+.person {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--surface-2);
+    color: var(--text-soft);
+    font-weight: 700;
+    font-size: var(--t-small);
+    flex-shrink: 0;
+}
+
+.person[data-me] {
+    box-shadow: inset 0 0 0 2px var(--accent);
+    color: var(--text);
+}
+
+/* ------------------------------------------------------------------ new bill */
+
+.form-grid {
+    display: grid;
+    gap: var(--s-4);
+}
+
+@media (min-width: 640px) {
+    .form-grid-2 {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+.newbill-layout {
+    display: grid;
+    gap: var(--s-5);
+    align-items: start;
+}
+
+@media (min-width: 1024px) {
+    .newbill-layout {
+        grid-template-columns: minmax(0, 1fr) 320px;
+    }
+    .newbill-side {
+        position: sticky;
+        top: var(--s-6);
+    }
+}
+
+.people {
+    list-style: none;
+    display: grid;
+}
+
+.person-row {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: var(--s-2) var(--s-3);
+    align-items: center;
+    padding: var(--s-3) 0;
+    border-top: 1px solid var(--hair);
+}
+
+.people > li:first-child .person-row {
+    border-top: 0;
+}
+
+.person-name {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+}
+
+.person-name strong {
+    overflow-wrap: anywhere;
+}
+
+.person-controls {
+    grid-column: 2 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--s-2) var(--s-4);
+}
+
+.person-controls .field {
+    width: 9.5rem;
+}
+
+.person-controls .input {
+    min-height: 40px;
+    padding-top: 7px;
+    padding-bottom: 7px;
+}
+
+@media (min-width: 640px) {
+    .person-row {
+        grid-template-columns: auto minmax(0, 1fr) auto auto;
+    }
+    .person-controls {
+        grid-column: auto;
+    }
+}
+
+.add-person {
+    display: grid;
+    gap: var(--s-3);
+    padding-top: var(--s-4);
+    border-top: 1px solid var(--hair);
+}
+
+.add-person-row {
+    display: grid;
+    gap: var(--s-3);
+}
+
+@media (min-width: 640px) {
+    .add-person-row {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) auto;
+        align-items: end;
+    }
+}
+
+.chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-2);
+}
+
+.chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 36px;
+    padding: 0 var(--s-3);
+    border-radius: var(--r-pill);
+    border: 1px solid var(--line-strong);
+    background: var(--surface);
+    font-size: var(--t-small);
+    font-weight: 600;
+    max-width: 100%;
+}
+
+.chip:hover:not(:disabled) {
+    background: var(--surface-2);
+}
+
+.chip[aria-pressed="true"] {
+    background: var(--ink);
+    border-color: var(--ink);
+    color: var(--plate);
+}
+
+@media (prefers-color-scheme: dark) {
+    .chip[aria-pressed="true"] {
+        background: var(--plate);
+        border-color: var(--plate);
+        color: var(--ink);
+    }
+}
+
+.chip span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.preview-list {
+    list-style: none;
+    display: grid;
+}
+
+.preview-list li {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--s-3);
+    padding: var(--s-2) 0;
+    border-top: 1px solid var(--hair);
+    font-size: var(--t-small);
+    min-width: 0;
+}
+
+.preview-list li:first-child {
+    border-top: 0;
+}
+
+.preview-list .preview-name {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.preview-total {
+    display: flex;
+    justify-content: space-between;
+    padding-top: var(--s-3);
+    margin-top: var(--s-2);
+    border-top: 1px solid var(--line-strong);
+    font-weight: 600;
+}
+
+/* ------------------------------------------------------------------ profile */
+
+.profile-grid {
+    display: grid;
+    gap: var(--s-5);
+    align-items: start;
+}
+
+@media (min-width: 1024px) {
+    .profile-grid {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    }
+    .profile-grid > .span-2 {
+        grid-column: 1 / -1;
+    }
+}
+
+.address-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-2) var(--s-3);
+    align-items: center;
+    padding: var(--s-3);
+    background: var(--surface-2);
+    border-radius: var(--r-sm);
+}
+
+.address-row .mono {
+    overflow-wrap: anywhere;
+    flex: 1 1 14rem;
+    min-width: 0;
+}
+
+.note-strip {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.note-chip {
+    width: 18px;
+    height: 24px;
+    border-radius: 3px;
+    background: var(--private);
+}
+
+.note-chip[data-spent="true"] {
+    background: transparent;
+    box-shadow: inset 0 0 0 1.5px var(--private);
+    opacity: 0.6;
+}
+
+/* ------------------------------------------------------------------ activity */
+
+.activity-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    flex-shrink: 0;
+}
+
+.activity-dot[data-read="true"] {
+    background: transparent;
+}
+
+/* Phones: the time drops under the text so the message gets the full width. */
+@media (max-width: 479px) {
+    .list-row:has(> time) {
+        flex-wrap: wrap;
+        row-gap: var(--s-1);
+    }
+    .list-row > time {
+        order: 3;
+        flex-basis: 100%;
+        padding-left: calc(8px + var(--s-3));
+    }
+}
+
+/* ------------------------------------------------------------------ 404 */
+
+.notfound {
+    display: grid;
+    gap: var(--s-4);
+    justify-items: start;
+    padding: var(--s-7) 0;
+}
+
+/* On phones, the viewer's own share (Pay) comes before the participant list. */
+@media (max-width: 1023px) {
+    .bill-side {
+        order: -1;
+    }
+}
+
