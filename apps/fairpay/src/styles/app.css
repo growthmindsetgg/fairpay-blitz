@@ -160,6 +160,47 @@
     padding: 0 var(--s-3);
 }
 
+/* Theme switch (App.tsx): System / Light / Dark. Purple marks the current choice. */
+.theme-seg {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2px;
+    padding: 2px;
+    border-radius: var(--r-pill);
+    background: var(--surface-2);
+    box-shadow: inset 0 0 0 1px var(--hair);
+}
+
+.theme-seg-btn {
+    display: grid;
+    place-items: center;
+    min-height: 32px;
+    border: 0;
+    border-radius: var(--r-pill);
+    background: transparent;
+    color: var(--text-soft);
+    cursor: pointer;
+    transition:
+        background-color var(--dur-ui) var(--ease-ui),
+        color var(--dur-ui) var(--ease-ui);
+}
+
+.theme-seg-btn:hover {
+    background: var(--surface-3);
+    color: var(--text);
+}
+
+.theme-seg-btn[aria-pressed="true"] {
+    background: var(--accent);
+    color: var(--on-accent);
+}
+
+.theme-cycle {
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+}
+
 /* ------------------------------------------------------------------ top bar + bottom nav (phone) */
 
 .topbar {
@@ -979,11 +1020,17 @@
 }
 
 @media (prefers-color-scheme: dark) {
-    .chip[aria-pressed="true"] {
+    :root:not([data-theme="light"]) .chip[aria-pressed="true"] {
         background: var(--plate);
         border-color: var(--plate);
         color: var(--ink);
     }
+}
+
+:root[data-theme="dark"] .chip[aria-pressed="true"] {
+    background: var(--plate);
+    border-color: var(--plate);
+    color: var(--ink);
 }
 
 .chip span {

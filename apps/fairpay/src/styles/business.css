@@ -348,13 +348,21 @@
 }
 
 @media (prefers-color-scheme: dark) {
-    .fe-veg.is-veg {
+    :root:not([data-theme="light"]) .fe-veg.is-veg {
         color: #6fcf86;
     }
 
-    .fe-veg.is-nonveg {
+    :root:not([data-theme="light"]) .fe-veg.is-nonveg {
         color: #e8956b;
     }
+}
+
+:root[data-theme="dark"] .fe-veg.is-veg {
+    color: #6fcf86;
+}
+
+:root[data-theme="dark"] .fe-veg.is-nonveg {
+    color: #e8956b;
 }
 
 .fe-spice {
@@ -1170,12 +1178,19 @@
 }
 
 @media (prefers-color-scheme: dark) {
-    .fe {
+    :root:not([data-theme="light"]) .fe {
         --fe-chart-col: #8b76ff;
         --fe-chart-col-hi: #ad9eff;
         --fe-chart-public: #8b76ff;
         --fe-chart-private: #1e9ab0;
     }
+}
+
+:root[data-theme="dark"] .fe {
+    --fe-chart-col: #8b76ff;
+    --fe-chart-col-hi: #ad9eff;
+    --fe-chart-public: #8b76ff;
+    --fe-chart-private: #1e9ab0;
 }
 
 .fe-sales {

@@ -3,7 +3,10 @@
    green (--verified) is checked on-chain, amber (--warn-*) is money owed or a warning, the ink
    chip with a cyan lock (--private-chip) is Confidential, red is an error. Saffron appears
    only in the logo's small share and the FairEats food art. Light first, dark via
-   prefers-color-scheme. */
+   prefers-color-scheme, unless the theme switch (src/lib/theme.ts) set data-theme="light|dark"
+   on <html>. Every dark rule in every stylesheet comes twice: inside the media query under
+   :root:not([data-theme="light"]), and outside it under :root[data-theme="dark"]. Keep both
+   copies identical. */
 
 /* Self-hosted fonts (SIL OFL 1.1, licences in public/fonts). No third-party requests. */
 @font-face {
@@ -175,7 +178,7 @@
 }
 
 @media (prefers-color-scheme: dark) {
-    :root {
+    :root:not([data-theme="light"]) {
         --bg: #0e0a1c;
         --surface: #17122e;
         --surface-2: #211b3e;
@@ -213,6 +216,45 @@
         --backdrop: rgba(6, 4, 14, 0.66);
         color-scheme: dark;
     }
+}
+
+:root[data-theme="dark"] {
+    --bg: #0e0a1c;
+    --surface: #17122e;
+    --surface-2: #211b3e;
+    --surface-3: #2b244d;
+    --text: #f4f1ff;
+    --text-soft: #beb7e0;
+    --text-faint: #a29bc8;
+    --hair: rgba(244, 241, 255, 0.12);
+    --line: rgba(244, 241, 255, 0.22);
+    --line-strong: #7b74a6;
+    --accent-ink: #ad9eff;
+    --accent-soft: #2a2160;
+    --verified: #6fd3a0;
+    --verified-ink: #6fd3a0;
+    --verified-bg: #15302a;
+    --private-chip: #e6e2f5;
+    --on-private-chip: #16112e;
+    --private-glyph: #00718a;
+    --private: #1e9ab0;
+    --private-ink: #8fddeb;
+    --private-bg: #102a33;
+    --warn-ink: #ffc870;
+    --warn-bar: #f2a93b;
+    --warn-bg: #33260f;
+    --error: #ff8a7a;
+    --error-bg: #3a1717;
+    --focus: #ad9eff;
+    --selection: #3b2f85;
+    --logo-main: #ad9eff;
+    --logo-word: #f4f1ff;
+    --shadow-1: 0 0 0 1px var(--hair), 0 1px 2px rgba(0, 0, 0, 0.2);
+    --shadow-2: 0 0 0 1px var(--hair), 0 16px 32px -16px rgba(0, 0, 0, 0.6);
+    --shadow-pop: 0 0 0 1px var(--hair), 0 16px 40px -12px rgba(0, 0, 0, 0.6);
+    --shadow-btn: none;
+    --backdrop: rgba(6, 4, 14, 0.66);
+    color-scheme: dark;
 }
 
 @media (prefers-reduced-motion: reduce) {

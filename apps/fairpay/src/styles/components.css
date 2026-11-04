@@ -1331,10 +1331,15 @@ a.addr {
 }
 
 @media (prefers-color-scheme: dark) {
-    .avatar {
+    :root:not([data-theme="light"]) .avatar {
         background: var(--plate);
         color: var(--ink);
     }
+}
+
+:root[data-theme="dark"] .avatar {
+    background: var(--plate);
+    color: var(--ink);
 }
 
 .account-text {

@@ -8,6 +8,7 @@ import { Logo } from "./components/Logo"
 import { WalletPicker } from "./components/WalletButton"
 import { api, ApiError, isUnreachable } from "./lib/api"
 import { ROUTER_BASENAME } from "./lib/base"
+import { applyTheme, readTheme } from "./lib/theme"
 import { WalletProvider } from "./lib/wallet"
 import "./styles/tokens.css"
 import "./styles/base.css"
@@ -113,6 +114,9 @@ function Boot() {
         </WalletProvider>
     )
 }
+
+// public/theme-init.js already did this before first paint; repeat it in case that file didn't load.
+applyTheme(readTheme())
 
 createRoot(document.getElementById("root")!).render(
     <StrictMode>

@@ -6,6 +6,9 @@
     <meta name="description" content="FairPay: split bills with friends and pay on Monad, with optional confidential payments." />
     <title>FairPay</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <!-- Sets data-theme from the saved theme choice before the first paint (src/lib/theme.ts).
+         Blocking and tiny on purpose; a file because the CSP forbids inline scripts. -->
+    <script src="%BASE_URL%theme-init.js"></script>
     <!-- The app's first request (src/main.tsx). Asking now, while the scripts download, saves a round
          trip, and a sleeping server starts waking a second or two sooner. /api is at the site root
          under every base, so Vite must leave this path alone. -->

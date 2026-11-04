@@ -7,6 +7,7 @@ import { Loading } from "./components/Page"
 import { ProfilePrompt } from "./components/ProfilePrompt"
 import { WalletButton } from "./components/WalletButton"
 import { api } from "./lib/api"
+import { THEME_CHOICES, THEME_LABEL, useTheme, type ThemeChoice } from "./lib/theme"
 import { useWallet } from "./lib/wallet"
 import { Home } from "./pages/Home"
 
@@ -90,6 +91,73 @@ function useUnread() {
     return count
 }
 
+// ------------------------------------------------------------------ theme switch
+
+const THEME_ICON: Record<ThemeChoice, string> = {
+    system: "M3.5 5h17v11h-17zM9 20h6M12 16v4",
+    light: "M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2.5v2M12 19.5v2M4.6 4.6 6 6M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4 6 18M18 6l1.4-1.4",
+    dark: "M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"
+}
+
+function ThemeIcon({ choice, size = 18 }: { choice: ThemeChoice; size?: number }) {
+    return (
+        <svg
+            className="icon"
+            width={size}
+            height={size}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={1.75}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+            focusable="false"
+        >
+            <path d={THEME_ICON[choice]} />
+        </svg>
+    )
+}
+
+/** Desktop sidebar: System / Light / Dark as a three-part segmented control. */
+function ThemeSegmented() {
+    const [theme, setTheme] = useTheme()
+    return (
+        <div className="theme-seg" role="group" aria-label={`Theme: ${THEME_LABEL[theme]}`}>
+            {THEME_CHOICES.map((c) => (
+                <button
+                    key={c}
+                    type="button"
+                    className="theme-seg-btn"
+                    aria-pressed={theme === c}
+                    aria-label={`Theme: ${THEME_LABEL[c]}`}
+                    title={`Theme: ${THEME_LABEL[c]}`}
+                    onClick={() => setTheme(c)}
+                >
+                    <ThemeIcon choice={c} />
+                </button>
+            ))}
+        </div>
+    )
+}
+
+/** Phone header: one button that steps System → Light → Dark. */
+function ThemeCycle() {
+    const [theme, setTheme] = useTheme()
+    const next = THEME_CHOICES[(THEME_CHOICES.indexOf(theme) + 1) % THEME_CHOICES.length]
+    return (
+        <button
+            type="button"
+            className="icon-link theme-cycle"
+            aria-label={`Theme: ${THEME_LABEL[theme]}. Switch to ${THEME_LABEL[next]}`}
+            title={`Theme: ${THEME_LABEL[theme]}`}
+            onClick={() => setTheme(next)}
+        >
+            <ThemeIcon choice={theme} size={20} />
+        </button>
+    )
+}
+
 function Sidebar({ unread }: { unread: number }) {
     const { me, cfg } = useWallet()
     const { pathname } = useLocation()
@@ -153,6 +221,7 @@ function Sidebar({ unread }: { unread: number }) {
             </nav>
             <div className="sidebar-foot">
                 <WalletButton placement="up" />
+                <ThemeSegmented />
                 <p className="sidebar-net">
                     {cfg.chainName || "Monad Testnet"} · test USDC only
                 </p>
@@ -169,6 +238,7 @@ function TopBar({ unread }: { unread: number }) {
                 <Logo variant="full" size={22} title={null} className="fp-logo--theme" />
             </Link>
             <div className="topbar-actions">
+                <ThemeCycle />
                 {me && (
                     <NavLink to="/activity" className="icon-link" aria-label={unread ? `Activity, ${unread} unread` : "Activity"}>
                         <Icon name="bell" />
