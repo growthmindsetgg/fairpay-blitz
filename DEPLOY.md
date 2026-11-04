@@ -71,7 +71,7 @@ The first start on a new database scans the privacy pool from its deploy block. 
 
    Sign-in messages must name exactly the address people open the app at, so a wrong `PUBLIC_ORIGIN` makes every sign-in fail. When the server starts it logs `Public origin: https://fairpay-blitz.vercel.app (app at /pay/)`; check that it matches. If you add a custom domain to the website, change `PUBLIC_ORIGIN` to it. With `PUBLIC_APP_PATH` set, the Render address doesn't show the app itself: its pages redirect to the website.
 
-5. **Check the visitor address the server sees.** Rate limits count by visitor address, so the server must find the real one in `X-Forwarded-For`. `TRUST_PROXY_HOPS` is the number of proxies in front of the server that add to that header. Through the website there are 4: Vercel, Cloudflare and Render's load balancer. Check it after deploying:
+5. **Check the visitor address the server sees.** Rate limits count by visitor address, so the server must find the real one in `X-Forwarded-For`. `TRUST_PROXY_HOPS` is the number of proxies in front of the server that add to that header. Through the website there are 4: Vercel (2 hops), Cloudflare and Render's load balancer. Check it after deploying:
 
    ```bash
    curl https://fairpay-blitz.vercel.app/api/whoami
@@ -103,7 +103,7 @@ Without it, anyone who finds the Render address can call the API directly with a
 
 ## Publish the website
 
-`npm run deploy:vercel` checks the Vercel sign-in, builds the website with the app at `/pay/` and the simulated demo at `/app/` (`npm run build:vercel`), packs it with the proxy secret header on, and uploads it to production. It publishes to the Vercel project set in `apps/site/scripts/deploy.mjs` (`PROJECT`); change that to publish to your own. Run `npm run vercel:login` once per computer. The script installs a pinned Vercel CLI into `apps/site/.vercel/cli` (gitignored) instead of using `npx`, which can fail with npm `ECOMPROMISED` ("Lock compromised") on slow disks. `npm run deploy:vercel -- --skip-build` reuses the last build.
+`npm run deploy:vercel` checks the Vercel sign-in, builds the website with the app at `/pay/` and the simulated demo at `/app/` (`npm run build:vercel`), packs it with the proxy secret header on, and uploads it to production. It publishes to the Vercel project set in `apps/site/scripts/deploy.mjs` (`PROJECT_NAME`); change that to publish to your own. Run `npm run vercel:login` once per computer. The script installs a pinned Vercel CLI into `apps/site/.vercel/cli` (gitignored) instead of using `npx`, which can fail with npm `ECOMPROMISED` ("Lock compromised") on slow disks. `npm run deploy:vercel -- --skip-build` reuses the last build.
 
 ## After it is live
 

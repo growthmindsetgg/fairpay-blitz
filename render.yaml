@@ -34,6 +34,6 @@ services:
         sync: false
       - key: DEMO_OWNER_WALLET
         sync: false
-      # Vercel, Cloudflare and Render's load balancer sit in front of the app.
+      # 4 hops: Vercel (2), Cloudflare and Render's load balancer sit in front of the app.
       - key: TRUST_PROXY_HOPS
         value: "4"
