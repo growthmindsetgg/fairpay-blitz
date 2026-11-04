@@ -48,12 +48,16 @@ export const DINE_IN_INTRA_STATE = true
 const STATUSES: Order["status"][] = ["awaiting_payment", "paid", "cooking", "ready", "served", "cancelled"]
 const ACTIVE: Order["status"][] = ["awaiting_payment", "paid", "cooking", "ready"]
 
-/** Who may move an order to each status, and from which status. */
-const TRANSITIONS: Record<string, { from: Order["status"]; roles: Role[] }> = {
-    cooking: { from: "paid", roles: ["owner", "manager", "chef"] },
-    ready: { from: "cooking", roles: ["owner", "manager", "chef"] },
-    served: { from: "ready", roles: ["owner", "manager", "waiter"] },
-    cancelled: { from: "awaiting_payment", roles: ["owner", "manager"] }
+/**
+ * Who may move an order to each status, and from which statuses. The board's flow is Paid ->
+ * Cooking -> Served (done), so served is reachable straight from cooking; ready stays for API
+ * callers and old orders (the kitchen clock then serves a ready order at its ready time).
+ */
+const TRANSITIONS: Record<string, { from: Order["status"][]; roles: Role[] }> = {
+    cooking: { from: ["paid"], roles: ["owner", "manager", "chef"] },
+    ready: { from: ["cooking"], roles: ["owner", "manager", "chef"] },
+    served: { from: ["cooking", "ready"], roles: ["owner", "manager", "waiter"] },
+    cancelled: { from: ["awaiting_payment"], roles: ["owner", "manager"] }
 }
 
 type ParsedOrder = {
@@ -409,7 +413,7 @@ export function orderRoutes(deps: Deps): Hono<AppEnv> {
 
         await db.tx(async (q) => {
             const o = (await q.one<OrderRow>("SELECT * FROM orders WHERE id = $1 FOR UPDATE", [id]))!
-            if (o.status !== rule.from) throw new HttpError(409, `The order is ${o.status.replace("_", " ")}; it can't be marked ${status} now.`)
+            if (!rule.from.includes(o.status)) throw new HttpError(409, `The order is ${o.status.replace("_", " ")}; it can't be marked ${status} now.`)
             let refunded = 0
             if (status === "cooking") {
                 let chef = o.chef_id
@@ -434,7 +438,8 @@ export function orderRoutes(deps: Deps): Hono<AppEnv> {
             } else if (status === "ready") {
                 await q.query("UPDATE orders SET status = 'ready', ready_at = $2 WHERE id = $1", [id, now])
             } else if (status === "served") {
-                await q.query("UPDATE orders SET status = 'served', served_at = $2 WHERE id = $1", [id, now])
+                // Straight from cooking, the food was ready when it was served.
+                await q.query("UPDATE orders SET status = 'served', ready_at = COALESCE(ready_at, $2), served_at = $2 WHERE id = $1", [id, now])
             } else {
                 // Lock the shares (after the order, the same order settle uses) so no payment is
                 // credited between this sum and the cancel.

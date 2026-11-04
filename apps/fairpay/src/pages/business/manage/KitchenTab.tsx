@@ -5,19 +5,20 @@ import { errorText, fe } from "../client"
 import type { TabProps } from "../Manage"
 import { Alert, istTime, Loading, minutesSince, plural, startOfTodayIst, usdc, useNow, usePoll } from "../ui"
 
-type Col = "paid" | "cooking" | "ready" | "served"
+type Col = "paid" | "cooking" | "served"
 
+/** Paid -> Cooking -> Served (done). The server's clock moves tickets along by itself. */
 const COLS: { key: Col; title: string; empty: string }[] = [
     { key: "paid", title: "Paid", empty: "Paid tickets go straight to cooking." },
     { key: "cooking", title: "Cooking", empty: "Nothing on the stove. Paid orders start here by themselves." },
-    { key: "ready", title: "Ready", empty: "Nothing waiting at the pass." },
     { key: "served", title: "Served · done", empty: "Nothing served yet today." }
 ]
 
 /** The next step for an order and who may take it (mirrors the server's rules). */
 const NEXT: Partial<Record<Order["status"], { to: Order["status"]; label: string; roles: Role[] }>> = {
     paid: { to: "cooking", label: "Start cooking", roles: ["chef", "manager", "owner"] },
-    cooking: { to: "ready", label: "Mark ready", roles: ["chef", "manager", "owner"] },
+    cooking: { to: "served", label: "Mark served", roles: ["waiter", "manager", "owner"] },
+    // Only an order marked ready elsewhere; the clock serves it on the next update.
     ready: { to: "served", label: "Mark served", roles: ["waiter", "manager", "owner"] }
 }
 
@@ -77,7 +78,7 @@ export function KitchenTab({ view }: TabProps) {
 
     const today = startOfTodayIst(now)
     const by = (s: Col) => {
-        const list = orders.filter((o) => o.status === s)
+        const list = orders.filter((o) => o.status === s || (s === "cooking" && o.status === "ready"))
         if (s === "served") return list.filter((o) => (o.servedAt ?? 0) >= today).sort((a, b) => (b.servedAt ?? 0) - (a.servedAt ?? 0)).slice(0, 8)
         // Oldest first: the ticket that has waited longest is at the top.
         return list.sort((a, b) => (a.paidAt ?? a.createdAt) - (b.paidAt ?? b.createdAt))
@@ -238,12 +239,10 @@ function Ticket({
     } else if (o.status === "cooking") {
         const m = o.cookingStartedAt ? minutesSince(o.cookingStartedAt, now) : 0
         const left = o.estReadyAt ? Math.ceil((o.estReadyAt - now) / 60_000) : null
-        timing = left === null ? `Cooking ${m} min` : left > 0 ? `Cooking · ready in ${left} min` : "Cooking · ready now"
+        timing = left === null ? `Cooking ${m} min` : left > 0 ? `Cooking · done in ${left} min` : "Cooking · done now"
         late = left !== null && left < -1
-    } else if (o.status === "ready" && o.readyAt) {
-        const m = minutesSince(o.readyAt, now)
-        timing = m < 1 ? "Ready · serving now" : `Ready ${m} min`
-        late = m >= 5
+    } else if (o.status === "ready") {
+        timing = "Ready · serving now"
     } else if (o.status === "served" && o.servedAt) timing = `Done · served ${istTime(o.servedAt)}`
 
     return (
@@ -280,7 +279,7 @@ function Ticket({
                     <span className="sr-only"> for table {table}</span>
                 </button>
             )}
-            {next && !can && <p className="fe-muted fe-ticket-wait">{o.status === "ready" ? "Served automatically within a minute" : o.status === "cooking" ? "Marked ready automatically when the time is up" : "Starts cooking automatically"}</p>}
+            {next && !can && <p className="fe-muted fe-ticket-wait">{o.status === "paid" ? "Starts cooking automatically" : "Served automatically when the time is up"}</p>}
         </article>
     )
 }

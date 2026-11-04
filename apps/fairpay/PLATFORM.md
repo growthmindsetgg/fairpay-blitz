@@ -154,9 +154,9 @@ FairEats:
   - Inserts the bill directly with SQL; it does not go through the bills routes.
 - `GET  /restaurants/:id/orders?status=` (staff) → `Order[]`
 - `POST /orders/:id/status {status}` (staff):
-  - The kitchen runs itself (`advanceKitchen` in `server/faireats.ts`): a fully paid, verified order starts cooking at once (`cooking_started_at` = `paid_at`, an on-duty chef as below), becomes ready when its cook time is up, and is served 1 minute after ready (which frees the table). It runs lazily on every read of the order, the kitchen list, the storefront, the manage view and the stats, and on payment; each step is one UPDATE guarded by status and time (idempotent, never backwards, never for unpaid orders) and records the time the step was due, so a server that slept catches up truthfully. The buttons below still let staff act earlier.
-  - Chef: paid→cooking (sets `cooking_started_at`, `chef_id` = an on-duty chef if not set, `est_ready_at` = now + cook time) and cooking→ready.
-  - Waiter: ready→served. Serving frees the table, setting it to available with no order.
+  - The kitchen runs itself (`advanceKitchen` in `server/faireats.ts`), Paid → Cooking → Served (done): a fully paid, verified order starts cooking at once (`cooking_started_at` = `paid_at`, an on-duty chef as below) and is served when its cook time is up (`ready_at` = `served_at` = that moment; the table is freed; the guest gets one "Your order is ready" message). An order left in `ready` is served at its ready time. It runs lazily on every read of the order, the kitchen list, the storefront, the manage view and the stats, and on payment; each step is one UPDATE guarded by status and time (idempotent, never backwards, never for unpaid orders) and records the time the step was due, so a server that slept catches up truthfully. The buttons below still let staff act earlier.
+  - Chef: paid→cooking (sets `cooking_started_at`, `chef_id` = an on-duty chef if not set, `est_ready_at` = now + cook time) and cooking→ready (API only; the clock then serves it at its ready time).
+  - Waiter: cooking→served ("Mark served" on the board; sets `ready_at` too if unset) or ready→served. Serving frees the table, setting it to available with no order.
   - Owner and manager can do any of these, and can cancel an order while awaiting payment, which frees the table.
 - `GET  /i/:token` → `Invoice` (public, read-only, via the order's separate `invoice_token`; the share token can pay and split, so it is never used for invoices). Payment lines carry `txHash` only for restaurant staff and the wallet that placed the order, and never for a share that also had a confidential payment; a confidential line is labelled "Confidential payment", not with the guest's name.
 
@@ -175,7 +175,7 @@ Team pay (`server/routes/teamPay.ts`, `server/routes/payroll.ts`). Owner only un
 
 **Wait time rule** (`estimateReadyAt(db, orderId, now)` in `server/faireats.ts`, used by settle):
 - cook time = the longest `prep_minutes` among the order's items, kept within 5 to 10 minutes (`COOK_MIN_MINUTES`, `COOK_MAX_MINUTES`); orders already in the kitchen don't add to it;
-- est = now + cook time; an order is ready at `cooking_started_at` + cook time and served 1 minute later (`SERVE_AFTER_READY_MS`);
+- est = now + cook time; an order is served (done) at `cooking_started_at` + cook time;
 - unpaid orders show the same cook time as `expectedWaitMinutes`.
 
 `Order.waitMinutes` is recomputed on read as `max(0, ceil((est_ready_at - now)/60000))`.

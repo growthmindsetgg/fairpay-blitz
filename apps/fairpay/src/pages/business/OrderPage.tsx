@@ -11,10 +11,10 @@ const STEPS: { key: Order["status"]; label: string; at: (o: Order) => number | n
     { key: "awaiting_payment", label: "Order placed", at: (o) => o.createdAt },
     { key: "paid", label: "Paid", at: (o) => o.paidAt },
     { key: "cooking", label: "Cooking", at: (o) => o.cookingStartedAt },
-    { key: "ready", label: "Ready", at: (o) => o.readyAt },
     { key: "served", label: "Served", at: (o) => o.servedAt }
 ]
-const RANK: Record<Order["status"], number> = { awaiting_payment: 0, paid: 1, cooking: 2, ready: 3, served: 4, cancelled: -1 }
+// Paid -> Cooking -> Served. A 'ready' order is served on the server's next update, so it shows as cooking.
+const RANK: Record<Order["status"], number> = { awaiting_payment: 0, paid: 1, cooking: 2, ready: 2, served: 3, cancelled: -1 }
 
 /** "2 guests · one person pays": the guest count alone reads oddly next to a single share. */
 function partyText(o: Order) {
@@ -185,7 +185,7 @@ export function OrderPage() {
                                 <div className="fe-wait-time">
                                     <span className="fe-label-sm">Estimated wait</span>
                                     <strong className="fe-wait-big">{waitText(minutes ?? 0)}</strong>
-                                    {o.estReadyAt && <span className="fe-muted">Ready around {istTime(o.estReadyAt)}</span>}
+                                    {o.estReadyAt && <span className="fe-muted">Served around {istTime(o.estReadyAt)}</span>}
                                 </div>
                             )}
                             {o.chef && (

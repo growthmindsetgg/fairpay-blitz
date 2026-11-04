@@ -10,12 +10,11 @@ import type { Chef, Invoice, MenuItem, Order, OrderShare, Restaurant, Role, Staf
 
 /**
  * The kitchen runs itself (advanceKitchen): a paid order starts cooking at once, cooks for its
- * longest prep time kept within these bounds, and is served SERVE_AFTER_READY_MS after it is ready.
+ * longest prep time kept within these bounds, and is served (done) when the cook time is up.
  * The guest's expected wait uses the same bounds, so it is never more than COOK_MAX_MINUTES.
  */
 export const COOK_MIN_MINUTES = 5
 export const COOK_MAX_MINUTES = 10
-export const SERVE_AFTER_READY_MS = 60_000
 const COOK_MIN_MS = COOK_MIN_MINUTES * 60_000
 const COOK_MAX_MS = COOK_MAX_MINUTES * 60_000
 /** Used when an ordered item has since been deleted from the menu. */
@@ -472,20 +471,24 @@ const READY_AT_SQL = `COALESCE(ready_at, ${COOK_START_SQL})`
 export type KitchenScope = { restaurantId: string } | { orderId: string }
 
 /**
- * Moves orders along the kitchen by the clock: paid -> cooking at once (cooking_started_at =
- * paid_at, an on-duty chef as the manual "Start cooking" picks), cooking -> ready when the cook
- * time is up (cooking_started_at + the estimate, kept within [COOK_MIN_MINUTES,
- * COOK_MAX_MINUTES]), ready -> served SERVE_AFTER_READY_MS later, which frees the table.
+ * Moves orders along the kitchen by the clock: Paid -> Cooking -> Served (done).
+ *  - paid -> cooking at once (cooking_started_at = paid_at, an on-duty chef as the manual
+ *    "Start cooking" picks);
+ *  - cooking -> served when the cook time is up (cooking_started_at + the estimate, kept within
+ *    [COOK_MIN_MINUTES, COOK_MAX_MINUTES]); ready_at and served_at are both that moment, and the
+ *    table is freed;
+ *  - an order left in 'ready' (marked ready by hand, or from before this flow) is served at once,
+ *    at its ready time.
  *
  * Runs lazily on reads, so a server that slept catches up on the next request. Each step is one
  * UPDATE guarded by status and time, so concurrent calls can't move an order twice, and each
  * records the time the step was due, not "now", so a stuck order's history stays truthful.
  * Never touches an unpaid or cancelled order, and never moves one backwards.
  */
-export async function advanceKitchen(db: Db, scope: KitchenScope, now: number): Promise<{ cooking: string[]; ready: string[]; served: string[] }> {
+export async function advanceKitchen(db: Db, scope: KitchenScope, now: number): Promise<{ cooking: string[]; served: string[] }> {
     const col = "restaurantId" in scope ? "restaurant_id" : "id"
     const key = "restaurantId" in scope ? scope.restaurantId : scope.orderId
-    if (!ID_RE.test(key)) return { cooking: [], ready: [], served: [] }
+    if (!ID_RE.test(key)) return { cooking: [], served: [] }
     const at = Math.floor(now)
     type Moved = { id: string; placed_by: Wallet | null; share_token: string; table_id: string | null; at: number; r_name: string }
     const back = (atCol: string) =>
@@ -500,20 +503,21 @@ export async function advanceKitchen(db: Db, scope: KitchenScope, now: number): 
              ${back("cooking_started_at")}`,
             [key, at]
         )
-        const ready = await q.query<Moved>(
-            `UPDATE orders SET status = 'ready', ready_at = ${READY_DUE_SQL}, est_ready_at = ${READY_DUE_SQL}
+        const done = await q.query<Moved>(
+            `UPDATE orders SET status = 'served', ready_at = ${READY_DUE_SQL}, served_at = ${READY_DUE_SQL}, est_ready_at = ${READY_DUE_SQL}
              WHERE ${col} = $1 AND status = 'cooking' AND ${READY_DUE_SQL} <= $2::bigint
-             ${back("ready_at")}`,
+             ${back("served_at")}`,
             [key, at]
         )
-        const served = await q.query<Moved>(
-            `UPDATE orders SET status = 'served', served_at = ${READY_AT_SQL} + ${SERVE_AFTER_READY_MS}::bigint
-             WHERE ${col} = $1 AND status = 'ready' AND ${READY_AT_SQL} + ${SERVE_AFTER_READY_MS}::bigint <= $2::bigint
+        // Left at 'ready': served at its ready time. The guest was already told it was ready.
+        const leftReady = await q.query<Moved>(
+            `UPDATE orders SET status = 'served', served_at = ${READY_AT_SQL}
+             WHERE ${col} = $1 AND status = 'ready' AND ${READY_AT_SQL} <= $2::bigint
              ${back("served_at")}`,
             [key, at]
         )
         // Served frees the table, as the waiter's "Mark served" does.
-        for (const o of served) {
+        for (const o of [...done, ...leftReady]) {
             if (o.table_id) {
                 await q.query("UPDATE restaurant_tables SET status = 'available', order_id = NULL, updated_at = $3 WHERE id = $1 AND order_id = $2", [
                     o.table_id,
@@ -522,22 +526,18 @@ export async function advanceKitchen(db: Db, scope: KitchenScope, now: number): 
                 ])
             }
         }
-        // The guest who placed it hears about ready and served (paying already told them the wait).
-        const tell = async (rows: Moved[], title: string) => {
-            for (const o of rows) {
-                if (!o.placed_by) continue
-                await q.query("INSERT INTO activity (wallet, kind, title, detail, link, created_at) VALUES ($1, 'order_update', $2, $3, $4, $5)", [
-                    o.placed_by,
-                    title,
-                    o.r_name,
-                    `/o/${o.id}?t=${o.share_token}`,
-                    Number(o.at)
-                ])
-            }
+        // One message to the guest who placed it, when the food is done (paying already told them the wait).
+        for (const o of done) {
+            if (!o.placed_by) continue
+            await q.query("INSERT INTO activity (wallet, kind, title, detail, link, created_at) VALUES ($1, 'order_update', $2, $3, $4, $5)", [
+                o.placed_by,
+                "Your order is ready",
+                o.r_name,
+                `/o/${o.id}?t=${o.share_token}`,
+                Number(o.at)
+            ])
         }
-        await tell(ready, "Your order is ready")
-        await tell(served, "Your order has been served")
-        return { cooking: cooking.map((o) => o.id), ready: ready.map((o) => o.id), served: served.map((o) => o.id) }
+        return { cooking: cooking.map((o) => o.id), served: [...done, ...leftReady].map((o) => o.id) }
     })
 }
 

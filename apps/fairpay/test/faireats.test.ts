@@ -600,18 +600,17 @@ describe("kitchen and tables", () => {
         // Already cooking: starting it again is refused.
         expect(await move("CHEF", "cooking")).toBe(409)
         expect(await move("MANAGER", "cancelled")).toBe(409)
-        // Staff can finish early: ready after 3 minutes.
+        // Staff can finish early, straight from cooking: "Mark served" after 3 minutes.
         t.clock.t += 3 * 60_000
-        expect(await move("CHEF", "ready")).toBe(200)
-        expect(await move("CHEF", "served")).toBe(403)
         const served = await json<Order>(t.call("POST", `/api/orders/${order.id}/status`, { cookie: t.cookies.WAITER, body: { status: "served" } }))
-        expect(served).toMatchObject({ status: "served", waitMinutes: 0 })
+        expect(served).toMatchObject({ status: "served", waitMinutes: 0, readyAt: T0 + 3 * 60_000, servedAt: T0 + 3 * 60_000 })
+        expect(await move("OWNER", "served")).toBe(409)
         const sf = await json<StorefrontView>(t.call("GET", `/api/restaurants/${r.slug}`))
         expect(sf.tables.find((x) => x.id === tables[0].id)!.status).toBe("available")
 
-        // The guest heard about each manual step.
+        // The guest heard once.
         const act = await t.deps.db.query<{ title: string }>("SELECT title FROM activity WHERE wallet = $1 AND kind = 'order_update' ORDER BY id", [GUEST])
-        expect(act.map((a) => a.title)).toEqual(["Your order is ready", "Your order has been served"])
+        expect(act.map((a) => a.title)).toEqual(["Your order has been served"])
         expect(await move("OWNER", "nonsense")).toBe(400)
     })
 
@@ -776,7 +775,7 @@ describe("the kitchen runs itself", () => {
             [id]
         )
 
-    it("cooks a paid order at once, makes it ready when its cook time is up, and serves it a minute later", async () => {
+    it("cooks a paid order at once and serves it exactly when its cook time is up", async () => {
         const { r, coffee, tables } = await restaurantWithStaff(t)
         const { order, token } = await placeOrder(t, { tableId: tables[0].id, guests: 1, paymentMode: "one_pays", items: [{ id: coffee.id, qty: 1, guest: 1 }] }, t.cookies.GUEST)
         await markPaid(t, order.id)
@@ -786,26 +785,20 @@ describe("the kitchen runs itself", () => {
         t.clock.t = T0 + 5 * 60_000 - 1000
         let o = await json<Order>(t.call("GET", `/api/orders/${order.id}?t=${token}`))
         expect(o).toMatchObject({ status: "cooking", waitMinutes: 1 })
+        expect((await board(r.id)).find((x) => x.id === order.id)!.status).toBe("cooking")
 
+        // Cooking -> served (done) at T0 + 5 min, with no ready step in between.
         t.clock.t = T0 + 5 * 60_000
         o = await json<Order>(t.call("GET", `/api/orders/${order.id}?t=${token}`))
-        expect(o).toMatchObject({ status: "ready", readyAt: T0 + 5 * 60_000, waitMinutes: 0 })
-
-        t.clock.t = T0 + 6 * 60_000 - 1000
-        expect((await board(r.id)).find((x) => x.id === order.id)!.status).toBe("ready")
-        t.clock.t = T0 + 6 * 60_000
-        expect((await board(r.id)).find((x) => x.id === order.id)).toMatchObject({ status: "served", servedAt: T0 + 6 * 60_000 })
-        // Served frees the table, and the guest heard ready and served at the times they happened.
+        expect(o).toMatchObject({ status: "served", readyAt: T0 + 5 * 60_000, servedAt: T0 + 5 * 60_000, waitMinutes: 0 })
+        // Served frees the table, and the guest heard once, at that moment.
         const sf = await json<StorefrontView>(t.call("GET", `/api/restaurants/${r.slug}`))
         expect(sf.tables.find((x) => x.id === tables[0].id)!.status).toBe("available")
         const act = await t.deps.db.query<{ title: string; created_at: number }>(
             "SELECT title, created_at FROM activity WHERE wallet = $1 AND kind = 'order_update' ORDER BY id",
             [GUEST]
         )
-        expect(act.map((a) => [a.title, Number(a.created_at)])).toEqual([
-            ["Your order is ready", T0 + 5 * 60_000],
-            ["Your order has been served", T0 + 6 * 60_000]
-        ])
+        expect(act.map((a) => [a.title, Number(a.created_at)])).toEqual([["Your order is ready", T0 + 5 * 60_000]])
         // Staff can't move it again.
         expect(await status(t.call("POST", `/api/orders/${order.id}/status`, { cookie: t.cookies.WAITER, body: { status: "served" } }))).toBe(409)
     })
@@ -816,17 +809,25 @@ describe("the kitchen runs itself", () => {
         const b = await placeOrder(t, { tableId: tables[1].id, guests: 1, paymentMode: "one_pays", items: [{ id: coffee.id, qty: 1, guest: 1 }] }, t.cookies.GUEST)
         await markPaid(t, a.order.id)
         await markPaid(t, b.order.id)
+        const c = await placeOrder(t, { tableId: tables[2].id, guests: 1, paymentMode: "one_pays", items: [{ id: coffee.id, qty: 1, guest: 1 }] }, t.cookies.GUEST)
+        await markPaid(t, c.order.id)
         // As the old rules left them: a paid but never started (16 min estimate with the queue),
-        // b started by hand a minute after paying with an estimate from paid time.
+        // b started by hand a minute after paying with an estimate from paid time, c left at ready.
         await t.deps.db.query("UPDATE orders SET status = 'paid', cooking_started_at = NULL, chef_id = NULL, est_ready_at = $2 WHERE id = $1", [a.order.id, T0 + 16 * 60_000])
         await t.deps.db.query("UPDATE orders SET status = 'cooking', cooking_started_at = $2, est_ready_at = $3 WHERE id = $1", [b.order.id, T0 + 60_000, T0 + 9 * 60_000])
+        await t.deps.db.query("UPDATE orders SET status = 'ready', ready_at = $2 WHERE id = $1", [c.order.id, T0 + 4 * 60_000])
 
         t.clock.t = T0 + 1555 * 60_000
-        expect((await board(r.id)).map((o) => o.status)).toEqual(["served", "served"])
-        // a: cooking from payment, 10 min (16 kept to 10), served a minute later.
-        expect(await row(a.order.id)).toMatchObject({ status: "served", cooking_started_at: T0, ready_at: T0 + 10 * 60_000, served_at: T0 + 11 * 60_000 })
-        // b: 8 min left of its estimate when it started, so ready at T0 + 9 min.
-        expect(await row(b.order.id)).toMatchObject({ status: "served", cooking_started_at: T0 + 60_000, ready_at: T0 + 9 * 60_000, served_at: T0 + 10 * 60_000 })
+        expect((await board(r.id)).map((o) => o.status)).toEqual(["served", "served", "served"])
+        // a: cooking from payment, 10 min (16 kept to 10), done then.
+        expect(await row(a.order.id)).toMatchObject({ status: "served", cooking_started_at: T0, ready_at: T0 + 10 * 60_000, served_at: T0 + 10 * 60_000 })
+        // b: 8 min left of its estimate when it started, so done at T0 + 9 min.
+        expect(await row(b.order.id)).toMatchObject({ status: "served", cooking_started_at: T0 + 60_000, ready_at: T0 + 9 * 60_000, served_at: T0 + 9 * 60_000 })
+        // c: served at its ready time.
+        expect(await row(c.order.id)).toMatchObject({ status: "served", ready_at: T0 + 4 * 60_000, served_at: T0 + 4 * 60_000 })
+        // One message for each order that finished cooking; none for c, which was already ready.
+        const titles = await t.deps.db.query<{ title: string }>("SELECT title FROM activity WHERE wallet = $1 AND kind = 'order_update'", [GUEST])
+        expect(titles.map((x) => x.title)).toEqual(["Your order is ready", "Your order is ready"])
 
         // Reading again changes nothing and tells nobody twice.
         const snap = await t.deps.db.query("SELECT * FROM orders ORDER BY id")
@@ -855,15 +856,24 @@ describe("the kitchen runs itself", () => {
         expect((await row(unpaid.order.id))!.status).toBe("cancelled")
     })
 
-    it("still lets staff finish early, and the clock then serves a minute after ready", async () => {
+    it("still lets staff mark served early, by role, and serves an order marked ready at once", async () => {
         const { r, dosa, tables } = await restaurantWithStaff(t)
-        const { order } = await placeOrder(t, { tableId: tables[0].id, guests: 1, paymentMode: "one_pays", items: [{ id: dosa.id, qty: 1, guest: 1 }] })
-        await markPaid(t, order.id)
+        const a = await placeOrder(t, { tableId: tables[0].id, guests: 1, paymentMode: "one_pays", items: [{ id: dosa.id, qty: 1, guest: 1 }] }, t.cookies.GUEST)
+        const b = await placeOrder(t, { tableId: tables[1].id, guests: 1, paymentMode: "one_pays", items: [{ id: dosa.id, qty: 1, guest: 1 }] }, t.cookies.GUEST)
+        await markPaid(t, a.order.id)
+        await markPaid(t, b.order.id)
         t.clock.t = T0 + 2 * 60_000
-        const ready = await json<Order>(t.call("POST", `/api/orders/${order.id}/status`, { cookie: t.cookies.CHEF, body: { status: "ready" } }))
-        expect(ready).toMatchObject({ status: "ready", readyAt: T0 + 2 * 60_000 })
+        const serve = (id: string, who: string) => t.call("POST", `/api/orders/${id}/status`, { cookie: t.cookies[who], body: { status: "served" } })
+        // Serving keeps its roles: not the chef.
+        expect(await status(serve(a.order.id, "CHEF"))).toBe(403)
+        expect(await json<Order>(serve(a.order.id, "MANAGER"))).toMatchObject({ status: "served", readyAt: T0 + 2 * 60_000, servedAt: T0 + 2 * 60_000 })
+        expect(await status(serve(a.order.id, "WAITER"))).toBe(409)
+        // Marking ready through the API still works; the next read serves it at that moment.
+        expect(await json<Order>(t.call("POST", `/api/orders/${b.order.id}/status`, { cookie: t.cookies.CHEF, body: { status: "ready" } }))).toMatchObject({ status: "ready" })
         t.clock.t = T0 + 3 * 60_000
-        expect((await board(r.id))[0]).toMatchObject({ status: "served", servedAt: T0 + 3 * 60_000 })
+        expect((await board(r.id)).find((x) => x.id === b.order.id)).toMatchObject({ status: "served", readyAt: T0 + 2 * 60_000, servedAt: T0 + 2 * 60_000 })
+        const guest = await t.deps.db.query<{ title: string }>("SELECT title FROM activity WHERE wallet = $1 AND kind = 'order_update' ORDER BY id", [GUEST])
+        expect(guest.map((x) => x.title)).toEqual(["Your order has been served", "Your order is ready"])
     })
 })
 
@@ -1163,15 +1173,15 @@ describe("demo seed", () => {
 
         // Staff finish one early; the clock serves the rest within ten minutes of being paid.
         const first = fresh[0]
-        expect(await status(t.call("POST", `/api/orders/${first.id}/status`, { cookie: t.cookies.OWNER, body: { status: "ready" } }))).toBe(200)
-        t.clock.t = soon + 11 * 60_000
+        expect(await status(t.call("POST", `/api/orders/${first.id}/status`, { cookie: t.cookies.OWNER, body: { status: "served" } }))).toBe(200)
+        t.clock.t = soon + 10 * 60_000
         expect(await board()).toEqual([])
         const done = await t.deps.db.query<{ id: string; status: string; paid_at: number; served_at: number }>("SELECT id, status, paid_at, served_at FROM orders ORDER BY id")
         for (const o of done) {
             expect(o.status).toBe("served")
-            expect(Number(o.served_at) - Number(o.paid_at)).toBeLessThanOrEqual(11 * 60_000)
+            expect(Number(o.served_at) - Number(o.paid_at)).toBeLessThanOrEqual(10 * 60_000)
         }
-        expect(Number(done.find((o) => o.id === first.id)!.served_at)).toBe(soon + 60_000)
+        expect(Number(done.find((o) => o.id === first.id)!.served_at)).toBe(soon)
         // Served sample orders are left alone by a later restart, and nothing was added.
         const snapshot = await t.deps.db.query("SELECT id, status, created_at, paid_at, cooking_started_at, ready_at, served_at FROM orders ORDER BY id")
         expect(await refreshDemoOrders(t.deps.db, soon + 3600_000)).toBe(0)

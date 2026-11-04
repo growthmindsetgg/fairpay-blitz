@@ -10,7 +10,7 @@ type StaffRole = StaffMember["role"]
 
 const ROLE_INFO: Record<StaffRole, { label: string; does: string }> = {
     manager: { label: "Manager", does: "Everything except staff managers and the payout wallet" },
-    chef: { label: "Chef", does: "Kitchen board: start cooking, mark ready" },
+    chef: { label: "Chef", does: "Kitchen board: sees tickets cook and finish by themselves; can start cooking" },
     waiter: { label: "Waiter", does: "Tables and serving: set table status, mark served" }
 }
 
