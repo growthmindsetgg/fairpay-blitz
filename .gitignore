@@ -1,0 +1,32 @@
+node_modules/
+dist/
+dist-demo/
+dist-site/
+dist-server/
+artifacts/
+cache/
+typechain-types/
+coverage/
+*.tgz
+.env
+.env.*
+!.env.example
+.vercel
+**/deployments/localhost.json
+data/
+.claude/settings.local.json
+.claude/worktrees/
+
+# Archives and key files can carry .env contents; keep them off GitHub.
+*.zip
+*.7z
+*.rar
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Database CA certificates stay local by default. The one exception is Supabase's public root CA
+# (the same for every Supabase project, no key in it), committed so every computer has it.
+*.crt
+!apps/fairpay/certs/supabase-root-2021.crt

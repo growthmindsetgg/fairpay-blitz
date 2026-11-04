@@ -1,0 +1,18 @@
+# Never send secrets or local state into the image.
+**/.env
+**/.env.*
+!**/.env.example
+**/data
+**/*.db
+**/deployments/localhost.json
+
+**/node_modules
+**/dist
+**/dist-site
+**/dist-server
+.git
+.claude
+packages/contracts/artifacts
+packages/contracts/cache
+packages/contracts/typechain-types
+**/coverage

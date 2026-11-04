@@ -1,0 +1,32 @@
+{
+  "name": "fairpay-blitz",
+  "private": true,
+  "workspaces": [
+    "packages/sdk",
+    "apps/faireats",
+    "apps/site",
+    "apps/fairpay"
+  ],
+  "scripts": {
+    "build:sdk": "npm run build -w @fairpay/sdk",
+    "dev": "npm run build:sdk && npm run dev -w faireats",
+    "start": "npm run build:sdk && npm run start -w faireats",
+    "test": "npm test -w faireats",
+    "build:site": "npm run build -w site",
+    "build:vercel": "npm run build:sdk && npm run build:demo -w faireats && npm run build:pay -w fairpay-app && npm run build -w site && node apps/site/scripts/assemble.mjs",
+    "preview:site": "npm run preview -w site",
+    "deploy:vercel": "node apps/site/scripts/deploy.mjs",
+    "vercel:login": "node apps/site/scripts/deploy.mjs --login",
+    "dev:fairpay": "npm run build:sdk && npm run dev -w fairpay-app",
+    "test:fairpay": "npm test -w fairpay-app",
+    "check:db": "npm run check:db -w fairpay-app"
+  },
+  "overrides": {
+    "ws": "^8.21.0",
+    "underscore": "^1.13.8",
+    "ejs": "^5.0.2",
+    "circom_tester": {
+      "snarkjs": "0.7.5"
+    }
+  }
+}

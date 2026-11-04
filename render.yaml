@@ -1,0 +1,39 @@
+# Render Blueprint for the FairPay app (Monad Testnet only). See DEPLOY.md.
+# One web service, built from apps/fairpay/Dockerfile. Data lives in Supabase (DATABASE_URL).
+services:
+  - type: web
+    name: fairpay
+    runtime: docker
+    dockerfilePath: ./apps/fairpay/Dockerfile
+    dockerContext: .
+    plan: free
+    region: frankfurt        # next to the Supabase database; every request makes several queries
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: DATABASE_URL       # Supabase > Connect > Session pooler URI
+        sync: false
+      # Supabase's CA certificate: certs/supabase-root-2021.crt (the public Supabase root CA in the repo).
+      - key: DATABASE_CA
+        sync: false
+      # Required: the address people open the app at. The website serves it at /pay/ and forwards
+      # /api here. The image sets NODE_ENV=production, so the server won't start without it.
+      - key: PUBLIC_ORIGIN
+        sync: false
+      - key: PUBLIC_APP_PATH
+        value: /pay
+      # Optional: the same random value as the Vercel project's PROXY_SECRET.
+      - key: PROXY_SECRET
+        sync: false
+      # Testnet keys only: the relayer pays gas for confidential payments, the faucet hands out test USDC.
+      - key: RELAYER_KEY
+        sync: false
+      - key: FAUCET_KEY
+        sync: false
+      - key: MERCHANT_ADDRESS
+        sync: false
+      - key: DEMO_OWNER_WALLET
+        sync: false
+      # Vercel, Cloudflare and Render's load balancer sit in front of the app.
+      - key: TRUST_PROXY_HOPS
+        value: "4"
