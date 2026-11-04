@@ -29,6 +29,7 @@ export function friendly(e: unknown): string {
             ? `The private pool takes only ${left} more ${left === "1" ? "note" : "notes"} right now. Add fewer, or pay publicly. Nothing was sent.`
             : "The private pool is full right now. Pay publicly instead."
     }
+    if (/NO_WITHDRAW/.test(all)) return "This pool can't withdraw notes yet. Nothing was sent."
     if (/POOL_PAUSED/.test(all)) return "The private pool is paused right now. Pay publicly instead. Nothing was sent."
     if (/NOT_MERCHANT/i.test(all))return "This recipient can't take confidential payments. Pay publicly instead."
     if (/relayer returned 429/i.test(all)) return "Too many tries in a short time. Wait a minute and try again. Nothing was paid."

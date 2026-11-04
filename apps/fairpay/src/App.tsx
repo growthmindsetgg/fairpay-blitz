@@ -210,16 +210,9 @@ function BottomNav() {
 }
 
 function Footer() {
-    const { cfg } = useWallet()
     return (
         <footer className="app-foot">
-            <span>
-                {cfg.chainName || "Monad Testnet"} (chain {cfg.chainId}) · Test USDC only · Unaudited testnet software
-            </span>
-            <span>Data: {cfg.storage === "supabase" ? "Supabase" : "local database"}</span>
-            <a href={`${cfg.explorer}/address/${cfg.fairPay}`} target="_blank" rel="noreferrer">
-                FairPay contract<span className="sr-only"> (opens in a new tab)</span>
-            </a>
+            <p className="app-foot-slogan">Split fairly. Pay privately.</p>
         </footer>
     )
 }

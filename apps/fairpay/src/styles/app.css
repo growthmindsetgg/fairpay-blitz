@@ -360,7 +360,12 @@
     border-top: 1px solid var(--hair);
 }
 
-.app-foot a {
+.app-foot-slogan {
+    margin: 0 auto;
+    font-family: var(--display);
+    font-size: var(--t-small);
+    font-weight: 600;
+    letter-spacing: -0.005em;
     color: var(--text-soft);
 }
 

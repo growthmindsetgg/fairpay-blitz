@@ -5,6 +5,7 @@ import {
     groupFromCommitments,
     isNoteSpent,
     payPublic,
+    withdrawNote,
     type Clients,
     type DepositProgress
 } from "@fairpay/sdk"
@@ -542,4 +543,66 @@ export async function poolSize(d: Deployment) {
         return c !== null && list.has(c)
     }).length
     return { deposits: list.size, mine }
+}
+
+// ------------------------------------------------------------------ withdrawing a note
+
+/** Steps shown while withdrawing one note. */
+export const WITHDRAW_STEPS = ["Check your notes", "Build the proof in this browser", "Confirm in your wallet", "Withdraw on Monad"]
+
+// Gas limit for one FairPool.withdraw on Monad testnet, which charges the full limit (the SDK's
+// estimate plus 15%; a relayed payment, which does a little more, is about 1.44M). Slightly
+// generous, so the check below only stops a wallet that would fail anyway.
+export const WITHDRAW_GAS = 1_500_000n
+
+/**
+ * Withdraws the oldest unspent note to the connected wallet. This is a normal transaction from
+ * that wallet (it pays the gas), so it is public. The proof is built here; the note never leaves
+ * the browser. On success the note is marked spent locally; the chain (nullifierSpent) stays the
+ * source of truth, and reconcileNotes marks it if the receipt was lost.
+ */
+export function withdrawOne(d: Deployment, clients: Clients, onStep: OnStep) {
+    return withNoteLock(async () => {
+        const { publicClient, walletClient } = clients
+        const recipient = walletClient.account.address
+        onStep(0)
+        await reconcileNotes(d, publicClient)
+        const stored = unspentNotes(d)[0]
+        if (!stored) throw new NotEnoughNotesError(0, 1)
+
+        const [mon, fees] = await Promise.all([publicClient.getBalance({ address: recipient }), publicClient.estimateFeesPerGas()])
+        const need = WITHDRAW_GAS * (fees.maxFeePerGas ?? 0n)
+        if (mon < need) {
+            throw new NeedFundsError("gas", `Withdrawing needs about ${mon3(need)} MON for gas, and your wallet has ${mon3(mon)}. Get test funds, then try again.`)
+        }
+
+        onStep(0, "Loading the pool")
+        const note = parseNote(stored.note)
+        const group = await loadGroupContaining(d, publicClient, [note.identity.commitment])
+        let sent = false
+        try {
+            const txHash = await withdrawNote({
+                walletClient,
+                publicClient,
+                deployment: d,
+                note,
+                recipient,
+                group,
+                onProgress: (p) => {
+                    if (p.step === "prove") onStep(1, "Usually 5-15 seconds.")
+                    else if (p.step === "confirm") onStep(2, "Your wallet asks once.")
+                    else {
+                        sent = true
+                        onStep(3)
+                    }
+                }
+            })
+            updateNote(d, stored.note, { spentTx: txHash })
+            return { txHash, recipient }
+        } catch (err) {
+            // Once sent, the chain decides: if the withdrawal landed after all, mark the note spent.
+            if (sent) await reconcileNotes(d, publicClient).catch(() => undefined)
+            throw err
+        }
+    })
 }

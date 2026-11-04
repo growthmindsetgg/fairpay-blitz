@@ -1,13 +1,28 @@
+import { poolSupportsWithdraw } from "@fairpay/sdk"
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react"
 import { CopyButton } from "../components/CopyLink"
 import { friendly } from "../components/errors"
 import { Input, Textarea } from "../components/Field"
 import { Icon } from "../components/Icon"
 import { Money } from "../components/Money"
+import { TxSteps, type TxStepsState } from "../components/TxSteps"
 import { PageHeader, SignInGate, useTitle } from "../components/Page"
 import { api } from "../lib/api"
-import { plural, usdc } from "../lib/format"
-import { BackupError, exportNotes, loadNotes, poolSize, reconcileNotes, restoreNotes, subscribeNotes, topUp, type StoredNote } from "../lib/payments"
+import { plural, shortHex, usdc } from "../lib/format"
+import {
+    BackupError,
+    exportNotes,
+    loadNotes,
+    NeedFundsError,
+    poolSize,
+    reconcileNotes,
+    restoreNotes,
+    subscribeNotes,
+    topUp,
+    withdrawOne,
+    WITHDRAW_STEPS,
+    type StoredNote
+} from "../lib/payments"
 import { useWallet } from "../lib/wallet"
 
 export function Profile() {
@@ -171,12 +186,14 @@ function WalletCard() {
 
 /** Private notes for confidential payments, kept in this browser. Ported from FairEats' wallet page. */
 function PrivateBalance() {
-    const { deployment, publicClient, wallet, refreshBalances, requestConnect, ensureChain } = useWallet()
+    const { cfg, deployment, publicClient, wallet, balances, refreshBalances, requestConnect, ensureChain, faucet } = useWallet()
     const [notes, setNotes] = useState<StoredNote[]>(() => loadNotes(deployment))
     const [busy, setBusy] = useState<string | null>(null)
     const [message, setMessage] = useState<string | null>(null)
     const [error, setError] = useState<string | null>(null)
     const [pool, setPool] = useState<{ deposits: number; mine: number } | null | "error">(null)
+    const [withdrawable, setWithdrawable] = useState<boolean | null>(null)
+    const [wd, setWd] = useState<WithdrawRun | null>(null)
     const inFlight = useRef(false)
     const fileInput = useRef<HTMLInputElement>(null)
 
@@ -199,6 +216,20 @@ function PrivateBalance() {
         void loadPool()
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [deployment, depositCount])
+
+    // An older pool has no withdraw: the button stays off with a plain reason instead of failing.
+    useEffect(() => {
+        let live = true
+        setWithdrawable(null)
+        poolSupportsWithdraw(deployment, publicClient).then(
+            (ok) => live && setWithdrawable(ok),
+            // A network hiccup isn't "unsupported": let the click try, and show the real error then.
+            () => live && setWithdrawable(true)
+        )
+        return () => {
+            live = false
+        }
+    }, [deployment, publicClient])
 
     const run = async (label: string, fn: () => Promise<string | void>) => {
         if (inFlight.current) return
@@ -238,6 +269,51 @@ function PrivateBalance() {
             )
             return `Added ${plural(k, "note")} to your private balance.`
         })
+
+    const withdraw = async () => {
+        if (inFlight.current) return
+        let w = wallet
+        if (!w) {
+            w = await requestConnect({ signIn: false, reason: `Connect the wallet that should receive the ${usdc(denom)}. Withdrawing is visible on-chain.` })
+            if (!w) return
+        }
+        inFlight.current = true
+        setBusy(WITHDRAWING)
+        setError(null)
+        setMessage(null)
+        setWd({ steps: WITHDRAW_STEPS, current: 0, detail: null, state: "running" })
+        try {
+            await ensureChain(w)
+            const r = await withdrawOne(deployment, w.clients, (current, detail) => setWd((x) => (x ? { ...x, current, detail: detail ?? null } : x)))
+            setWd((x) => (x ? { ...x, state: "done", current: x.steps.length - 1, detail: null, txHash: r.txHash } : x))
+            setMessage(`Withdrew ${usdc(denom)} to ${shortHex(r.recipient)}.`)
+        } catch (e) {
+            setWd((x) => (x ? { ...x, state: "error", need: e instanceof NeedFundsError ? e.need : undefined } : x))
+            setError(friendly(e))
+        } finally {
+            inFlight.current = false
+            setBusy(null)
+            setNotes(loadNotes(deployment))
+            void refreshBalances().catch(() => undefined)
+        }
+    }
+
+    const getGas = () =>
+        run("Sending test funds…", async () => {
+            const text = await faucet()
+            setWd(null)
+            return `${text} Then try again.`
+        })
+
+    const noGas = !!wallet && balances !== null && balances.mon === 0n
+    const withdrawOff =
+        withdrawable === false
+            ? "This pool can't withdraw notes yet."
+            : unspent.length === 0
+              ? "No notes ready to withdraw."
+              : noGas
+                ? "Your wallet needs a little MON for gas."
+                : null
 
     const download = () => {
         const blob = new Blob([exportNotes(deployment)], { type: "application/json" })
@@ -286,7 +362,9 @@ function PrivateBalance() {
                         <span className="stat-value">
                             <Money value={unspent.length * denom} />
                         </span>
-                        <span className="stat-sub">{plural(unspent.length, "note")}</span>
+                        <span className="stat-sub">
+                            {plural(unspent.length, "note")} × {usdc(denom)}
+                        </span>
                     </div>
                     <div className="stat">
                         <span className="stat-label">Spent</span>
@@ -337,7 +415,7 @@ function PrivateBalance() {
                 </div>
 
                 <div aria-live="polite">
-                    {busy && (
+                    {busy && busy !== WITHDRAWING && (
                         <p className="progress">
                             <span className="spinner" aria-hidden="true" />
                             {busy}
@@ -353,6 +431,42 @@ function PrivateBalance() {
                     ))}
                     <span className="field-hint">Adding is visible on-chain. Add early, pay later.</span>
                 </div>
+                <div className="stack-sm" role="group" aria-labelledby="withdraw-h">
+                    <h3 id="withdraw-h" className="field-label">
+                        Withdraw
+                    </h3>
+                    <p className="field-hint">Moves one note's {usdc(denom)} back to your wallet. This is a normal transaction from your wallet, so it is public.</p>
+                    <div className="row">
+                        <button type="button" className="btn btn-primary btn-sm" disabled={!!busy || withdrawOff !== null || withdrawable === null} onClick={() => void withdraw()}>
+                            {busy === WITHDRAWING ? "Withdrawing…" : `Withdraw ${usdc(denom)} to my wallet`}
+                        </button>
+                        {withdrawOff ? (
+                            <span className="field-hint">{withdrawOff}</span>
+                        ) : (
+                            wallet && <span className="field-hint">To {shortHex(wallet.address)}. Gas is about 0.15 MON.</span>
+                        )}
+                    </div>
+                    {wd && (
+                        <>
+                            <TxSteps steps={wd.steps} current={wd.current} state={wd.state} detail={wd.detail} label="Withdrawal progress" footnote={wd.state === "running" ? "Keep this tab open." : undefined} />
+                            {wd.state === "done" && wd.txHash && (
+                                <p className="field-hint">
+                                    <a href={`${cfg.explorer}/tx/${wd.txHash}`} target="_blank" rel="noreferrer">
+                                        View the withdrawal on the explorer<span className="sr-only"> (opens in a new tab)</span>
+                                    </a>
+                                </p>
+                            )}
+                            {wd.state === "error" && wd.need === "gas" && cfg.faucet && (
+                                <div>
+                                    <button type="button" className="btn btn-secondary btn-sm" disabled={!!busy} onClick={() => void getGas()}>
+                                        Get test funds
+                                    </button>
+                                </div>
+                            )}
+                        </>
+                    )}
+                </div>
+
                 <div className="row">
                     <button type="button" className={unspent.length > 0 ? "btn btn-primary btn-sm" : "btn btn-secondary btn-sm"} disabled={notes.length === 0 || !!busy} onClick={download}>
                         Back up notes
@@ -378,3 +492,7 @@ function PrivateBalance() {
         </section>
     )
 }
+
+const WITHDRAWING = "withdrawing"
+
+type WithdrawRun = { steps: string[]; current: number; detail: string | null; state: TxStepsState; txHash?: string; need?: "usdc" | "gas" }
