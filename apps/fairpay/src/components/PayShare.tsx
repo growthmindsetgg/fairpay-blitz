@@ -23,7 +23,8 @@ import {
 import { sameWallet, useWallet } from "../lib/wallet"
 import { Address, Money } from "./Money"
 import { Badge } from "./Badge"
-import { friendly } from "./errors"
+import { AutoRefreshNotice, useAutoRefreshOnError } from "./AutoRefresh"
+import { friendly, refreshesAfter } from "./errors"
 import { Icon } from "./Icon"
 import { Modal } from "./Modal"
 import { TxSteps, type TxStepsState } from "./TxSteps"
@@ -49,6 +50,8 @@ type Run = {
     error?: { text: string; need?: "usdc" | "gas"; notes?: { have: number; need: number } }
     txHash?: Hash
     done?: string
+    /** Set when the failure should reload the page after a countdown (see useAutoRefreshOnError). */
+    failId?: number
 }
 
 /**
@@ -68,6 +71,10 @@ export function PayShare({ kind, id, token, onPaid }: PayShareProps) {
     const busy = useRef(false)
     const onPaidRef = useRef(onPaid)
     onPaidRef.current = onPaid
+    const failSeq = useRef(0)
+    // After a failed payment or top-up, reload in 5 s (the reload picks a sent payment up again).
+    // Only once the flow has ended in "error", and never while another one has started since.
+    const autoRefresh = useAutoRefreshOnError(run?.state === "error" ? run.failId : null, { seconds: 5, canRefresh: () => !busy.current })
 
     const load = useCallback(async () => {
         setLoadError(null)
@@ -181,7 +188,9 @@ export function PayShare({ kind, id, token, onPaid }: PayShareProps) {
         if (e instanceof NeedFundsError) err.need = e.need
         if (e instanceof NotEnoughNotesError) err.notes = { have: e.have, need: e.need }
         if (e instanceof PaymentRejectedError) err.text = `FairPay didn't count this payment: ${e.message}`
-        setRun((r) => (r ? { ...r, state: "error", error: err } : r))
+        // A "no" in the wallet isn't a failure: no countdown, so they can try again at once.
+        const failId = refreshesAfter(e) ? ++failSeq.current : undefined
+        setRun((r) => (r ? { ...r, state: "error", error: err, failId } : r))
     }
 
     const pay = async () => {
@@ -263,6 +272,8 @@ export function PayShare({ kind, id, token, onPaid }: PayShareProps) {
     }
 
     const getFunds = async () => {
+        // A reload would cut the faucet request off and hide its answer.
+        autoRefresh.cancel()
         try {
             const text = await faucet()
             setRun((r) => (r ? { ...r, error: r.error ? { ...r.error, text: `${text} Then try again.` } : r.error } : r))
@@ -453,9 +464,12 @@ export function PayShare({ kind, id, token, onPaid }: PayShareProps) {
                         )}
                         {run.state === "error" && run.error && (
                             <div className="txresult">
-                                <p className="error-text" role="alert">
-                                    {run.error.text}
-                                </p>
+                                <div>
+                                    <p className="error-text" role="alert">
+                                        {run.error.text}
+                                    </p>
+                                    <AutoRefreshNotice {...autoRefresh} />
+                                </div>
                                 <div className="row">
                                     {run.error.need && cfg.faucet && (
                                         <button type="button" className="btn btn-primary btn-sm" onClick={() => void getFunds()}>

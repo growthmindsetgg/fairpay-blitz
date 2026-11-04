@@ -1,5 +1,37 @@
 import { ApiError } from "../lib/api"
 
+// Kept free of lib/payments (and so of the SDK): many pages import this file.
+const REJECTED = /User rejected|denied|4001|UserRejectedRequestError/i
+const WALLET_BUSY = /resource unavailable|already pending|-32002/i
+
+function allText(e: unknown) {
+    const err = (e ?? {}) as { shortMessage?: string; details?: string; message?: string; code?: string | number; name?: string }
+    return `${err.code ?? ""} ${err.name ?? ""} ${err.shortMessage ?? ""} ${err.details ?? ""} ${err.message ?? String(e)}`
+}
+
+/** The person said no in their wallet (EIP-1193 4001, anywhere in the `cause` chain). Nothing was sent. */
+export function cancelledInWallet(e: unknown) {
+    if (e instanceof ApiError) return false
+    for (let x = e as { code?: unknown; name?: unknown; cause?: unknown } | undefined, i = 0; x && i < 8; x = x.cause as typeof x, i++) {
+        if (x.code === 4001 || x.name === "UserRejectedRequestError") return true
+    }
+    return REJECTED.test(allText(e))
+}
+
+/** The wallet still has a prompt open (EIP-1193 -32002): confirming it later could still send something. */
+export function walletBusy(e: unknown) {
+    return !(e instanceof ApiError) && WALLET_BUSY.test(allText(e))
+}
+
+/**
+ * Whether a failed payment, deposit or withdrawal should reload the page after a short countdown.
+ * Not when the person cancelled in their wallet (they may retry at once), and not while the wallet
+ * still has a prompt open (a reload would lose track of what it sends).
+ */
+export function refreshesAfter(e: unknown) {
+    return !cancelledInWallet(e) && !walletBusy(e)
+}
+
 /**
  * Turns any payment, wallet or API error into one short sentence a person can act on. Raw library
  * output (viem `details`, `shortMessage`, RPC URLs) is never shown: it can be long, technical,
@@ -7,7 +39,7 @@ import { ApiError } from "../lib/api"
  */
 export function friendly(e: unknown): string {
     const err = (e ?? {}) as { shortMessage?: string; details?: string; message?: string; code?: string | number; name?: string }
-    const all = `${err.code ?? ""} ${err.name ?? ""} ${err.shortMessage ?? ""} ${err.details ?? ""} ${err.message ?? String(e)}`
+    const all = allText(e)
 
     // Server messages are fixed, readable sentences: show them as they are.
     if (e instanceof ApiError) {
@@ -15,7 +47,7 @@ export function friendly(e: unknown): string {
         return e.message
     }
 
-    if (/User rejected|denied|4001|UserRejectedRequestError/i.test(all)) return "You cancelled in your wallet. Nothing was sent."
+    if (REJECTED.test(all)) return "You cancelled in your wallet. Nothing was sent."
     if (/already (been )?spent|NOTE_SPENT|nullifier/i.test(all)) return "This note was already spent. Restore a newer backup or add a note."
     if (/WRONG_CHAIN|chain mismatch|does not match the target chain|ChainMismatch/i.test(all))
         return "Your wallet is on another network. Switch to Monad Testnet and try again."
@@ -35,7 +67,7 @@ export function friendly(e: unknown): string {
     if (/relayer returned 429/i.test(all)) return "Too many tries in a short time. Wait a minute and try again. Nothing was paid."
     if (/RELAYER_REJECTED|relayer returned 5\d\d/i.test(all)) return "The relayer couldn't send it. Nothing was spent. Try again."
     if (/proof|witness|wasm/i.test(all)) return "The proof didn't finish. Nothing was paid. Try again."
-    if (/resource unavailable|already pending|-32002/i.test(all)) return "Your wallet already has a request open. Check the wallet window."
+    if (WALLET_BUSY.test(all)) return "Your wallet already has a request open. Check the wallet window."
 
     if (e instanceof Error && !err.shortMessage && !err.details) return e.message.split("\n")[0]!
     if (err.shortMessage) return "Your wallet couldn't complete that. Nothing was sent. Try again."

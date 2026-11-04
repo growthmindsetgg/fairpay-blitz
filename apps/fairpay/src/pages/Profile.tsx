@@ -1,7 +1,8 @@
 import { poolSupportsWithdraw } from "@fairpay/sdk"
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react"
 import { CopyButton } from "../components/CopyLink"
-import { friendly } from "../components/errors"
+import { AutoRefreshNotice, useAutoRefreshOnError } from "../components/AutoRefresh"
+import { friendly, refreshesAfter } from "../components/errors"
 import { Input, Textarea } from "../components/Field"
 import { Icon } from "../components/Icon"
 import { Money } from "../components/Money"
@@ -196,6 +197,14 @@ function PrivateBalance() {
     const [wd, setWd] = useState<WithdrawRun | null>(null)
     const inFlight = useRef(false)
     const fileInput = useRef<HTMLInputElement>(null)
+    // A failed deposit or withdrawal reloads the page in 5 s (the notes are saved and re-checked
+    // against the chain on load). Set only after the flow ended; anything started since clears it.
+    const [failed, setFailed] = useState<number | null>(null)
+    const failSeq = useRef(0)
+    const autoRefresh = useAutoRefreshOnError(failed, { seconds: 5, canRefresh: () => !inFlight.current })
+    const noteFailure = (e: unknown) => {
+        if (refreshesAfter(e)) setFailed(++failSeq.current)
+    }
 
     useEffect(() => {
         const update = () => setNotes(loadNotes(deployment))
@@ -231,17 +240,19 @@ function PrivateBalance() {
         }
     }, [deployment, publicClient])
 
-    const run = async (label: string, fn: () => Promise<string | void>) => {
+    const run = async (label: string, fn: () => Promise<string | void>, opts: { refreshOnError?: boolean } = {}) => {
         if (inFlight.current) return
         inFlight.current = true
         setBusy(label)
         setError(null)
         setMessage(null)
+        setFailed(null)
         try {
             const done = await fn()
             if (done) setMessage(done)
         } catch (e) {
             setError(friendly(e))
+            if (opts.refreshOnError) noteFailure(e)
         } finally {
             inFlight.current = false
             setBusy(null)
@@ -268,7 +279,7 @@ function PrivateBalance() {
                 setBusy(p.summary && p.detail !== p.summary ? `${p.summary} ${p.detail}` : p.detail || "Checking your balance…")
             )
             return `Added ${plural(k, "note")} to your private balance.`
-        })
+        }, { refreshOnError: true })
 
     const withdraw = async () => {
         if (inFlight.current) return
@@ -281,6 +292,7 @@ function PrivateBalance() {
         setBusy(WITHDRAWING)
         setError(null)
         setMessage(null)
+        setFailed(null)
         setWd({ steps: WITHDRAW_STEPS, current: 0, detail: null, state: "running" })
         try {
             await ensureChain(w)
@@ -290,6 +302,7 @@ function PrivateBalance() {
         } catch (e) {
             setWd((x) => (x ? { ...x, state: "error", need: e instanceof NeedFundsError ? e.need : undefined } : x))
             setError(friendly(e))
+            noteFailure(e)
         } finally {
             inFlight.current = false
             setBusy(null)
@@ -487,6 +500,7 @@ function PrivateBalance() {
                             {error}
                         </p>
                     )}
+                    <AutoRefreshNotice {...autoRefresh} />
                 </div>
             </div>
         </section>
