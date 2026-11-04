@@ -425,8 +425,9 @@ describe("order shares", () => {
         expect(await note()).toMatchObject({ amount: 12_600_000, paid: 15 * U, tip: 2_400_000, due: 0, status: "paid" })
         const row = await t.deps.db.one<{ amount: number; tip: number; paid: number; status: string }>("SELECT amount, tip, paid, status FROM order_shares WHERE id = $1", [share.id])
         expect(row).toEqual({ amount: 12_600_000, tip: 2_400_000, paid: 15 * U, status: "paid" })
-        expect((await t.deps.db.one<{ status: string }>("SELECT status FROM orders WHERE id = $1", [orderId]))!.status).toBe("paid")
-        const last = await t.deps.db.one<{ detail: string }>("SELECT detail FROM activity WHERE title = 'Confidential payment received' ORDER BY id DESC LIMIT 1")
+        // Fully paid: the kitchen starts it at once.
+        expect((await t.deps.db.one<{ status: string }>("SELECT status FROM orders WHERE id = $1", [orderId]))!.status).toBe("cooking")
+        const last =await t.deps.db.one<{ detail: string }>("SELECT detail FROM activity WHERE title = 'Confidential payment received' ORDER BY id DESC LIMIT 1")
         expect(last!.detail).toBe("5.00 USDC for Saffron Test, table 4 (includes a 2.40 USDC tip)")
     })
 
@@ -497,13 +498,16 @@ describe("order shares", () => {
         r = await json<SettleResult>(await settle(shares[1]!.id, n3))
         expect(r.status).toBe("credited")
 
-        const paidOrder = await t.deps.db.one<{ status: string; paid_at: number | null; est_ready_at: number | null }>(
-            "SELECT status, paid_at, est_ready_at FROM orders WHERE id = $1",
+        const paidOrder = await t.deps.db.one<{ status: string; paid_at: number | null; est_ready_at: number | null; cooking_started_at: number | null }>(
+            "SELECT status, paid_at, est_ready_at, cooking_started_at FROM orders WHERE id = $1",
             [orderId]
         )
-        expect(paidOrder!.status).toBe("paid")
+        // Verified and fully paid: cooking from the moment it was paid, ready within 5 to 10 minutes.
+        expect(paidOrder!.status).toBe("cooking")
         expect(paidOrder!.paid_at).toBeGreaterThan(0)
-        expect(paidOrder!.est_ready_at).toBeGreaterThan(paidOrder!.paid_at!)
+        expect(paidOrder!.cooking_started_at).toBe(paidOrder!.paid_at)
+        expect(Number(paidOrder!.est_ready_at) - Number(paidOrder!.paid_at)).toBeGreaterThanOrEqual(5 * 60_000)
+        expect(Number(paidOrder!.est_ready_at) - Number(paidOrder!.paid_at)).toBeLessThanOrEqual(10 * 60_000)
         order = paidOrder
 
         const payments = await t.deps.db.query<{ kind: string; payer: string }>("SELECT kind, payer FROM payments ORDER BY id")

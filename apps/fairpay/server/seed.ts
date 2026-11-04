@@ -67,9 +67,9 @@ const SEATS = [2, 2, 4, 4, 4, 4, 6, 6, 2, 4, 4, 6]
 // Three in-progress orders so the storefront shows some tables taken. They are marked paid without
 // any payment (no payments row, no transaction): Order.demo and Invoice.demo say so in the UI.
 const DEMO_ORDERS: { table: number; mode: "one_pays" | "split"; guests: number; status: "paid" | "cooking"; minutesAgo: number; items: [string, number, number][] }[] = [
-    { table: 3, mode: "split", guests: 2, status: "cooking", minutesAgo: 12, items: [["biryani", 1, 1], ["paneer", 1, 2], ["lassi", 2, 1]] },
-    { table: 7, mode: "one_pays", guests: 4, status: "paid", minutesAgo: 3, items: [["pakora", 2, 1], ["ramen", 2, 1], ["risotto", 1, 1], ["chai", 4, 1]] },
-    { table: 10, mode: "one_pays", guests: 2, status: "cooking", minutesAgo: 8, items: [["tacos", 1, 1], ["burrata", 1, 1], ["kulfi", 2, 1]] }
+    { table: 3, mode: "split", guests: 2, status: "cooking", minutesAgo: 6, items: [["biryani", 1, 1], ["paneer", 1, 2], ["lassi", 2, 1]] },
+    { table: 7, mode: "one_pays", guests: 4, status: "paid", minutesAgo: 2, items: [["pakora", 2, 1], ["ramen", 2, 1], ["risotto", 1, 1], ["chai", 4, 1]] },
+    { table: 10, mode: "one_pays", guests: 2, status: "cooking", minutesAgo: 4, items: [["tacos", 1, 1], ["burrata", 1, 1], ["kulfi", 2, 1]] }
 ]
 
 /**
@@ -231,9 +231,9 @@ async function estimateDemoOrders(q: Db, restaurantId: string, now: number) {
 }
 
 /**
- * Seeded sample orders never get cooked by anyone, so a fixed ready time soon reads "any moment
- * now" for hours. On each startup this moves the ones still paid or cooking back to "placed a few
- * minutes ago". Orders staff have moved on (ready, served, cancelled) are left alone. Returns how
+ * Seeded sample orders cook and are served by the clock (advanceKitchen) within about ten minutes
+ * of the first read. On each startup this moves the ones still paid or cooking back to "placed a
+ * few minutes ago". Orders already ready, served or cancelled are left alone. Returns how
  * many it moved; 0 when there is no demo restaurant.
  */
 export async function refreshDemoOrders(db: Db, now: number): Promise<number> {

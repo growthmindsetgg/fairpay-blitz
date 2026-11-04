@@ -8,10 +8,24 @@ import { appUrlOf } from "./origin.js"
 import { amountInWords, financialYear, stateCode } from "../shared/gst.js"
 import type { Chef, Invoice, MenuItem, Order, OrderShare, Restaurant, Role, StaffMember, Table, Wallet } from "../shared/types.js"
 
-/** Minutes added to the estimate for each order already paid or cooking at the restaurant. */
-export const QUEUE_MINUTES_PER_ORDER = 4
+/**
+ * The kitchen runs itself (advanceKitchen): a paid order starts cooking at once, cooks for its
+ * longest prep time kept within these bounds, and is served SERVE_AFTER_READY_MS after it is ready.
+ * The guest's expected wait uses the same bounds, so it is never more than COOK_MAX_MINUTES.
+ */
+export const COOK_MIN_MINUTES = 5
+export const COOK_MAX_MINUTES = 10
+export const SERVE_AFTER_READY_MS = 60_000
+const COOK_MIN_MS = COOK_MIN_MINUTES * 60_000
+const COOK_MAX_MS = COOK_MAX_MINUTES * 60_000
 /** Used when an ordered item has since been deleted from the menu. */
 const DEFAULT_PREP_MINUTES = 15
+
+/** Cook time in whole minutes for a longest prep time, within [COOK_MIN_MINUTES, COOK_MAX_MINUTES]. */
+export function cookMinutes(prepMinutes: number): number {
+    const m = Number.isFinite(prepMinutes) ? Math.ceil(prepMinutes) : DEFAULT_PREP_MINUTES
+    return Math.min(COOK_MAX_MINUTES, Math.max(COOK_MIN_MINUTES, m))
+}
 export const ID_RE = /^[A-Za-z0-9_-]{1,64}$/
 /**
  * Ids of the sample orders seeded with the demo restaurant (server/seed.ts). Real order ids are
@@ -371,14 +385,22 @@ export const ORDER_EXPIRY_MS = 15 * 60_000
 
 /**
  * Cancels this restaurant's orders that have waited for payment longer than ORDER_EXPIRY_MS with
- * nothing paid on any share, and frees their tables. Idempotent and cheap when there is nothing
- * to do (one indexed SELECT), so routes call it on every read of the restaurant's tables.
+ * nothing paid on any share, and frees their tables; then moves the kitchen along by the clock
+ * (advanceKitchen). Idempotent and cheap when there is nothing to do (one indexed SELECT and three
+ * guarded UPDATEs), so routes call it on every read of the restaurant's tables or orders.
  *
  * Locks the candidate orders first, then re-checks the shares in a later statement: settle
  * (routes/pay.ts) locks an order before crediting its share, so that statement either sees the
  * payment and skips the order, or the payment waits and then finds the order cancelled.
  */
 export async function expireStaleOrders(db: Db, restaurantId: string, now: number): Promise<string[]> {
+    const expired = await expireUnpaidOrders(db, restaurantId, now)
+    // Every read that sweeps unpaid orders also brings the kitchen up to date (advanceKitchen).
+    await advanceKitchen(db, { restaurantId }, now)
+    return expired
+}
+
+async function expireUnpaidOrders(db: Db, restaurantId: string, now: number): Promise<string[]> {
     const cutoff = now - ORDER_EXPIRY_MS
     const stale = await db.query<{ id: string }>(
         "SELECT id FROM orders WHERE restaurant_id = $1 AND status = 'awaiting_payment' AND created_at < $2 LIMIT 200",
@@ -413,34 +435,110 @@ export function isDemoOrder(orderId: string, restaurantIsDemo: boolean): boolean
 }
 
 /**
- * Wait-time rule, in minutes per order: the longest prep time among the order's items, plus 4
- * minutes for every other order of the restaurant that is paid or cooking right now. Orders that
- * don't exist are left out of the map.
+ * Wait-time rule, in minutes per order: the longest prep time among the order's items, kept within
+ * [COOK_MIN_MINUTES, COOK_MAX_MINUTES] (cookMinutes). Orders already in the kitchen don't add to it:
+ * every order cooks at once. Orders that don't exist are left out of the map.
  */
 export async function waitRuleMinutes(db: Db, orderIds: string[]): Promise<Map<string, number>> {
     const out = new Map<string, number>()
     if (orderIds.length === 0) return out
     const ph = orderIds.map((_, i) => `$${i + 1}`).join(", ")
-    const rows = await db.query<{ id: string; base: number | null; queue: number }>(
+    const rows = await db.query<{ id: string; base: number | null }>(
         `SELECT o.id,
             (SELECT MAX(COALESCE(m.prep_minutes, ${DEFAULT_PREP_MINUTES})) FROM order_items oi
-               LEFT JOIN menu_items m ON m.id = oi.item_id WHERE oi.order_id = o.id) AS base,
-            (SELECT COUNT(*)::int FROM orders x
-               WHERE x.restaurant_id = o.restaurant_id AND x.status IN ('paid', 'cooking') AND x.id <> o.id) AS queue
+               LEFT JOIN menu_items m ON m.id = oi.item_id WHERE oi.order_id = o.id) AS base
          FROM orders o WHERE o.id IN (${ph})`,
         orderIds
     )
     for (const r of rows) {
         const base = r.base === null || r.base === undefined ? DEFAULT_PREP_MINUTES : Number(r.base)
-        out.set(r.id, base + Number(r.queue ?? 0) * QUEUE_MINUTES_PER_ORDER)
+        out.set(r.id, cookMinutes(base))
     }
     return out
 }
 
 /** When the order should be ready if the kitchen gets it at `now` (see waitRuleMinutes). */
 export async function estimateReadyAt(db: Db, orderId: string, now: number): Promise<number> {
-    const minutes = (await waitRuleMinutes(db, [orderId])).get(orderId) ?? DEFAULT_PREP_MINUTES
+    const minutes = (await waitRuleMinutes(db, [orderId])).get(orderId) ?? COOK_MAX_MINUTES
     return now + minutes * 60_000
+}
+
+/** SQL: an order's cook time in ms from its stored estimate relative to `fromCol`, clamped. */
+const cookMsSql = (fromCol: string) => `LEAST(${COOK_MAX_MS}::bigint, GREATEST(${COOK_MIN_MS}::bigint, COALESCE(est_ready_at - ${fromCol}, ${COOK_MAX_MS}::bigint)))`
+const COOK_START_SQL = "COALESCE(cooking_started_at, paid_at, created_at)"
+const READY_DUE_SQL = `(${COOK_START_SQL} + ${cookMsSql(COOK_START_SQL)})`
+const READY_AT_SQL = `COALESCE(ready_at, ${COOK_START_SQL})`
+
+export type KitchenScope = { restaurantId: string } | { orderId: string }
+
+/**
+ * Moves orders along the kitchen by the clock: paid -> cooking at once (cooking_started_at =
+ * paid_at, an on-duty chef as the manual "Start cooking" picks), cooking -> ready when the cook
+ * time is up (cooking_started_at + the estimate, kept within [COOK_MIN_MINUTES,
+ * COOK_MAX_MINUTES]), ready -> served SERVE_AFTER_READY_MS later, which frees the table.
+ *
+ * Runs lazily on reads, so a server that slept catches up on the next request. Each step is one
+ * UPDATE guarded by status and time, so concurrent calls can't move an order twice, and each
+ * records the time the step was due, not "now", so a stuck order's history stays truthful.
+ * Never touches an unpaid or cancelled order, and never moves one backwards.
+ */
+export async function advanceKitchen(db: Db, scope: KitchenScope, now: number): Promise<{ cooking: string[]; ready: string[]; served: string[] }> {
+    const col = "restaurantId" in scope ? "restaurant_id" : "id"
+    const key = "restaurantId" in scope ? scope.restaurantId : scope.orderId
+    if (!ID_RE.test(key)) return { cooking: [], ready: [], served: [] }
+    const at = Math.floor(now)
+    type Moved = { id: string; placed_by: Wallet | null; share_token: string; table_id: string | null; at: number; r_name: string }
+    const back = (atCol: string) =>
+        `RETURNING id, placed_by, share_token, table_id, ${atCol} AS at, (SELECT r.name FROM restaurants r WHERE r.id = orders.restaurant_id) AS r_name`
+    return db.tx(async (q) => {
+        const cooking = await q.query<Moved>(
+            `UPDATE orders SET status = 'cooking', cooking_started_at = paid_at,
+                est_ready_at = paid_at + ${cookMsSql("paid_at")},
+                chef_id = COALESCE(chef_id, (SELECT c.id FROM chefs c WHERE c.restaurant_id = orders.restaurant_id AND c.on_duty
+                    ORDER BY (SELECT COUNT(*) FROM orders x WHERE x.chef_id = c.id AND x.status = 'cooking'), c.name, c.id LIMIT 1))
+             WHERE ${col} = $1 AND status = 'paid' AND paid_at IS NOT NULL AND paid_at <= $2::bigint
+             ${back("cooking_started_at")}`,
+            [key, at]
+        )
+        const ready = await q.query<Moved>(
+            `UPDATE orders SET status = 'ready', ready_at = ${READY_DUE_SQL}, est_ready_at = ${READY_DUE_SQL}
+             WHERE ${col} = $1 AND status = 'cooking' AND ${READY_DUE_SQL} <= $2::bigint
+             ${back("ready_at")}`,
+            [key, at]
+        )
+        const served = await q.query<Moved>(
+            `UPDATE orders SET status = 'served', served_at = ${READY_AT_SQL} + ${SERVE_AFTER_READY_MS}::bigint
+             WHERE ${col} = $1 AND status = 'ready' AND ${READY_AT_SQL} + ${SERVE_AFTER_READY_MS}::bigint <= $2::bigint
+             ${back("served_at")}`,
+            [key, at]
+        )
+        // Served frees the table, as the waiter's "Mark served" does.
+        for (const o of served) {
+            if (o.table_id) {
+                await q.query("UPDATE restaurant_tables SET status = 'available', order_id = NULL, updated_at = $3 WHERE id = $1 AND order_id = $2", [
+                    o.table_id,
+                    o.id,
+                    Number(o.at)
+                ])
+            }
+        }
+        // The guest who placed it hears about ready and served (paying already told them the wait).
+        const tell = async (rows: Moved[], title: string) => {
+            for (const o of rows) {
+                if (!o.placed_by) continue
+                await q.query("INSERT INTO activity (wallet, kind, title, detail, link, created_at) VALUES ($1, 'order_update', $2, $3, $4, $5)", [
+                    o.placed_by,
+                    title,
+                    o.r_name,
+                    `/o/${o.id}?t=${o.share_token}`,
+                    Number(o.at)
+                ])
+            }
+        }
+        await tell(ready, "Your order is ready")
+        await tell(served, "Your order has been served")
+        return { cooking: cooking.map((o) => o.id), ready: ready.map((o) => o.id), served: served.map((o) => o.id) }
+    })
 }
 
 /**
@@ -470,7 +568,7 @@ export async function assignInvoiceNo(q: Db, orderId: string, now?: number): Pro
  * Everything that happens when an order becomes fully paid. Payment settle (routes/pay.ts) calls
  * this inside its transaction once every share is paid. Idempotent and safe whether or not the
  * caller already set status/paid_at: moves awaiting_payment -> paid, sets paid_at and est_ready_at
- * if missing, and assigns the invoice number.
+ * if missing, assigns the invoice number, and starts cooking at once (advanceKitchen).
  */
 export async function onOrderPaid(q: Db, orderId: string, now: number): Promise<{ invoiceNo: string; estReadyAt: number }> {
     const est = await estimateReadyAt(q, orderId, now)
@@ -484,6 +582,7 @@ export async function onOrderPaid(q: Db, orderId: string, now: number): Promise<
     )
     if (!row) throw new Error(`onOrderPaid: no order ${orderId}`)
     const invoiceNo = await assignInvoiceNo(q, orderId, now)
+    await advanceKitchen(q, { orderId }, now)
     return { invoiceNo, estReadyAt: Number(row.est_ready_at) }
 }
 

@@ -83,7 +83,7 @@ if (config.demoOwnerWallet && config.merchant) {
         now: Date.now()
     })
     if (created) console.log("Seeded the demo restaurant.")
-    // The sample orders are never cooked, so restart their clocks rather than show stale estimates.
+    // Sample orders not yet read since seeding restart their clocks rather than show stale estimates.
     else await refreshDemoOrders(db, Date.now())
 } else {
     console.warn("MERCHANT_ADDRESS is not set; skipping the demo restaurant.")

@@ -217,8 +217,10 @@ describe("the numbers", () => {
         expect(s.averageOrder).toBe(11_250_000)
         expect(s.guests).toBe(9)
         expect(s.cancelled).toEqual({ count: 1, value: 8 * U })
-        // (5 + 3 + 1 + 3) / 4 = 3 minutes to pay; one served order, 50 minutes.
-        expect(s.turnover).toEqual({ toPaidMinutes: 3, toServedMinutes: 50, served: 1, turnsPerTable: 1 })
+        // (5 + 3 + 1 + 3) / 4 = 3 minutes to pay. The kitchen runs by the clock, so reading the
+        // stats served the cooking order (paid 3 min after placing, cooked 10, served 1 later: 14)
+        // and the ready one (paid after 1, served a minute later: 2) as well: (50 + 14 + 2) / 3 = 22.
+        expect(s.turnover).toEqual({ toPaidMinutes: 3, toServedMinutes: 22, served: 3, turnsPerTable: 1 })
     })
 
     it("is all zeros, with 24 empty hours and one day, for a quiet day", async () => {

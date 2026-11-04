@@ -8,7 +8,10 @@ import type { AppEnv, Db, Deps } from "../context.js"
 import {
     ID_RE,
     TOKEN_RE,
+    advanceKitchen,
     buildInvoice,
+    COOK_MAX_MINUTES,
+    cookMinutes,
     expireStaleOrders,
     fmtUsdc,
     loadOrder,
@@ -342,6 +345,8 @@ export function orderRoutes(deps: Deps): Hono<AppEnv> {
         const row = ID_RE.test(id) ? await db.one<OrderRow>("SELECT * FROM orders WHERE id = $1", [id]) : undefined
         // Same answer whether the order is missing or the link is wrong, so ids can't be probed.
         if (!row || !(await canView(row, c.req.query("t"), c.get("wallet") ?? null))) throw new HttpError(404, "No order found. Open it from its link.")
+        // The kitchen runs by the clock; bring this order up to date before showing it.
+        await advanceKitchen(db, { orderId: id }, deps.now())
         return c.json((await loadOrder(deps, id))!)
     })
 
@@ -374,6 +379,7 @@ export function orderRoutes(deps: Deps): Hono<AppEnv> {
         // The invoice token only reads; the share token (which can pay and split) never opens this.
         const row = TOKEN_RE.test(token) ? await db.one<OrderRow>("SELECT * FROM orders WHERE invoice_token = $1", [token]) : undefined
         if (!row) throw new HttpError(404, "This invoice link is not valid.")
+        await advanceKitchen(db, { orderId: row.id }, deps.now())
         // Staff and the wallet that placed the order also see public transactions; others don't.
         return c.json(await buildInvoice(deps, row, c.get("wallet") ?? null))
     })
@@ -397,6 +403,9 @@ export function orderRoutes(deps: Deps): Hono<AppEnv> {
             chefId = b.chefId
         }
         const now = deps.now()
+        // Staff can act earlier than the clock, never against it: catch the order up first, so a
+        // step the kitchen already took by itself answers 409 rather than being taken twice.
+        await advanceKitchen(db, { orderId: id }, now)
 
         await db.tx(async (q) => {
             const o = (await q.one<OrderRow>("SELECT * FROM orders WHERE id = $1 FOR UPDATE", [id]))!
@@ -418,7 +427,10 @@ export function orderRoutes(deps: Deps): Hono<AppEnv> {
                     )
                     chef = pick?.id ?? null
                 }
-                await q.query("UPDATE orders SET status = 'cooking', cooking_started_at = $2, chef_id = $3 WHERE id = $1", [id, now, chef])
+                // The cook time runs from now, within the same bounds as the automatic start.
+                const planned = o.est_ready_at !== null && o.paid_at !== null ? (Number(o.est_ready_at) - Number(o.paid_at)) / 60_000 : COOK_MAX_MINUTES
+                const cookMs = cookMinutes(planned) * 60_000
+                await q.query("UPDATE orders SET status = 'cooking', cooking_started_at = $2, chef_id = $3, est_ready_at = $4 WHERE id = $1", [id, now, chef, now + cookMs])
             } else if (status === "ready") {
                 await q.query("UPDATE orders SET status = 'ready', ready_at = $2 WHERE id = $1", [id, now])
             } else if (status === "served") {

@@ -6,7 +6,7 @@ import { formatUsdc } from "../../shared/money.js"
 import type { PayKind, PayTarget, SettleResult, Wallet } from "../../shared/types.js"
 import type { AppEnv, Db, Deps } from "../context.js"
 import { HttpError, limit, rateLimiter, readJson } from "../http.js"
-import { assignInvoiceNo, estimateReadyAt } from "../faireats.js"
+import { advanceKitchen, assignInvoiceNo, estimateReadyAt } from "../faireats.js"
 import { addActivity } from "./activity.js"
 
 const HASH32 = /^0x[0-9a-fA-F]{64}$/
@@ -533,11 +533,13 @@ function createPayService(deps: Deps) {
         if (!paid) return
         // Same transaction, so an invoice number is never skipped or given twice.
         await assignInvoiceNo(q, t.parentId, now)
+        // Paid and verified: the kitchen starts it straight away (server/faireats.ts).
+        await advanceKitchen(q, { orderId: t.parentId }, now)
         const r = t.restaurant!
         const minutes = Math.max(0, Math.ceil((est - now) / 60_000))
         await addActivity(
             q,
-            { wallet: r.ownerWallet, kind: "order_update", title: `Order paid: ${t.title}`, detail: "Ready for the kitchen.", link: `/business/faireats/manage/${r.id}` },
+            { wallet: r.ownerWallet, kind: "order_update", title: `Order paid: ${t.title}`, detail: `Cooking now, ready in about ${minutes} min.`, link: `/business/faireats/manage/${r.id}` },
             now
         )
         if (r.placedBy && r.placedBy !== r.ownerWallet) {

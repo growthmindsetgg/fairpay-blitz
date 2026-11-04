@@ -178,7 +178,7 @@ export function OrderPage() {
                                 <div className="fe-wait-time">
                                     <span className="fe-label-sm">Expected wait</span>
                                     <strong className="fe-wait-big">About {plural(Math.max(1, expected), "minute")}</strong>
-                                    <span className="fe-muted">once paid, counting the orders already in the kitchen</span>
+                                    <span className="fe-muted">once paid; the kitchen starts as soon as payment is verified</span>
                                 </div>
                             )}
                             {showWait && (

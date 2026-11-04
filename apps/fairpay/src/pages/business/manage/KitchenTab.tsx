@@ -8,10 +8,10 @@ import { Alert, istTime, Loading, minutesSince, plural, startOfTodayIst, usdc, u
 type Col = "paid" | "cooking" | "ready" | "served"
 
 const COLS: { key: Col; title: string; empty: string }[] = [
-    { key: "paid", title: "Paid", empty: "New tickets land here once the bill is paid." },
-    { key: "cooking", title: "Cooking", empty: "Nothing on the stove." },
+    { key: "paid", title: "Paid", empty: "Paid tickets go straight to cooking." },
+    { key: "cooking", title: "Cooking", empty: "Nothing on the stove. Paid orders start here by themselves." },
     { key: "ready", title: "Ready", empty: "Nothing waiting at the pass." },
-    { key: "served", title: "Served", empty: "Nothing served yet today." }
+    { key: "served", title: "Served · done", empty: "Nothing served yet today." }
 ]
 
 /** The next step for an order and who may take it (mirrors the server's rules). */
@@ -31,7 +31,7 @@ export function KitchenTab({ view }: TabProps) {
     const [announce, setAnnounce] = useState("")
     const [cancelling, setCancelling] = useState<Order | null>(null)
     const known = useRef<Set<string> | null>(null)
-    const now = useNow(15_000)
+    const now = useNow(5_000)
 
     const load = useCallback(async () => {
         try {
@@ -128,7 +128,7 @@ export function KitchenTab({ view }: TabProps) {
                         Awaiting payment <span className="fe-count">{awaiting.length}</span>
                     </h3>
                     <p className="fe-hint">
-                        The kitchen starts these once every share is paid and verified on-chain. Orders with no payment are cancelled automatically after 15 minutes,
+                        These start cooking by themselves once every share is paid and verified on-chain. Orders with no payment are cancelled automatically after 15 minutes,
                         which frees the table.
                     </p>
                     <ul className="fe-await-list">
@@ -238,13 +238,13 @@ function Ticket({
     } else if (o.status === "cooking") {
         const m = o.cookingStartedAt ? minutesSince(o.cookingStartedAt, now) : 0
         const left = o.estReadyAt ? Math.ceil((o.estReadyAt - now) / 60_000) : null
-        timing = left === null ? `Cooking ${m} min` : left > 0 ? `Cooking ${m} min · due in ${left} min` : `Cooking ${m} min · due now`
-        late = left !== null && left < 0
+        timing = left === null ? `Cooking ${m} min` : left > 0 ? `Cooking · ready in ${left} min` : "Cooking · ready now"
+        late = left !== null && left < -1
     } else if (o.status === "ready" && o.readyAt) {
         const m = minutesSince(o.readyAt, now)
-        timing = `Ready ${m} min`
+        timing = m < 1 ? "Ready · serving now" : `Ready ${m} min`
         late = m >= 5
-    } else if (o.status === "served" && o.servedAt) timing = `Served ${istTime(o.servedAt)}`
+    } else if (o.status === "served" && o.servedAt) timing = `Done · served ${istTime(o.servedAt)}`
 
     return (
         <article className={`fe-ticket${late ? " is-late" : ""}`} aria-label={`Table ${table}, ${o.status}`}>
@@ -280,7 +280,7 @@ function Ticket({
                     <span className="sr-only"> for table {table}</span>
                 </button>
             )}
-            {next && !can && <p className="fe-muted fe-ticket-wait">{o.status === "ready" ? "Waiting for a waiter" : "Waiting for the kitchen"}</p>}
+            {next && !can && <p className="fe-muted fe-ticket-wait">{o.status === "ready" ? "Served automatically within a minute" : o.status === "cooking" ? "Marked ready automatically when the time is up" : "Starts cooking automatically"}</p>}
         </article>
     )
 }
