@@ -36,6 +36,7 @@ export class FairPayError extends Error {
             | "NOTE_NOT_FOUND"
             | "NOTE_SPENT"
             | "NOT_MERCHANT"
+            | "NO_WITHDRAW"
             | "POOL_FULL"
             | "POOL_PAUSED"
             | "RELAYER_REJECTED"

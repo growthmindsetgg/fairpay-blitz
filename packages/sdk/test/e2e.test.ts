@@ -23,6 +23,8 @@ import {
     randomSecret,
     serializeNote,
     verifyPaymentTx,
+    poolSupportsWithdraw,
+    withdrawNote,
     FairPayError,
     erc20Abi,
     type Clients,
@@ -356,5 +358,37 @@ describe("depositing several notes", () => {
         expect(result.status).toBe("verified")
         if (result.status === "verified") expect(result.payment.kind).toBe("private")
         expect(await isNoteSpent(deployment, publicClient, note)).toBe(true)
+    })
+})
+
+describe("withdrawing a note", () => {
+    const balanceOf = (address: Address) =>
+        publicClient.readContract({ address: deployment.token, abi: erc20Abi, functionName: "balanceOf", args: [address] })
+
+    it("sends one denomination to the recipient from the user's own wallet, then the note can't pay or withdraw again", async () => {
+        expect(await poolSupportsWithdraw(deployment, publicClient)).toBe(true)
+        const note = createNote(deployment)
+        await depositNote(deployment, customer, note)
+        const before = await balanceOf(other)
+        const steps: string[] = []
+        const txHash = await withdrawNote({ ...customer, deployment, note, recipient: other, onProgress: (p) => steps.push(p.step) })
+        expect(steps).toEqual(["prove", "confirm", "sent"])
+        expect(await balanceOf(other)).toBe(before + 5_000_000n)
+        const receipt = await publicClient.getTransactionReceipt({ hash: txHash })
+        expect(receipt.from.toLowerCase()).toBe(customer.walletClient.account.address.toLowerCase())
+        expect(await isNoteSpent(deployment, publicClient, note)).toBe(true)
+
+        await expect(withdrawNote({ ...customer, deployment, note, recipient: other })).rejects.toMatchObject({ code: "NOTE_SPENT" })
+        const orderRef = createOrderRef({ orderId: "FE-004", participantId: "dan", secret: randomSecret() })
+        await expect(createPrivatePayment(deployment, publicClient, { note, merchant, orderRef })).rejects.toMatchObject({ code: "NOTE_SPENT" })
+    })
+
+    it("refuses a note that already paid", async () => {
+        const note = createNote(deployment)
+        await depositNote(deployment, customer, note)
+        const orderRef = createOrderRef({ orderId: "FE-005", participantId: "erin", secret: randomSecret() })
+        const request = await createPrivatePayment(deployment, publicClient, { note, merchant, orderRef })
+        await createRelayer(deployment, relayerClients).handle(JSON.parse(JSON.stringify(request)))
+        await expect(withdrawNote({ ...customer, deployment, note, recipient: other })).rejects.toMatchObject({ code: "NOTE_SPENT" })
     })
 })

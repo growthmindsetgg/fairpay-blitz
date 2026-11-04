@@ -28,11 +28,15 @@ export const fairPoolAbi = parseAbi([
     "function nullifierSpent(uint256 nullifier) view returns (bool)",
     "function isMerchant(address merchant) view returns (bool)",
     "function messageFor(address merchant, bytes32 orderRef) pure returns (uint256)",
+    "function WITHDRAW_REF() view returns (bytes32)",
+    "function withdrawMessage(address recipient) pure returns (uint256)",
     "function paused() view returns (bool)",
     "function deposit(uint256 commitment)",
     "function pay(address merchant, bytes32 orderRef, PaymentProof proof)",
+    "function withdraw(address recipient, PaymentProof proof)",
     "event Deposit(uint256 indexed commitment, uint256 index, uint256 root)",
     "event PrivatePayment(uint256 indexed nullifier, address indexed merchant, bytes32 indexed orderRef)",
+    "event Withdrawal(uint256 indexed nullifier, address indexed recipient)",
     "error ZeroAddress()",
     "error ZeroAmount()",
     "error ZeroOrderRef()",
@@ -46,6 +50,7 @@ export const fairPoolAbi = parseAbi([
     "error UnsupportedDepth()",
     "error NullifierSpent()",
     "error InvalidProof()",
+    "error ZeroRecipient()",
     "error EnforcedPause()"
 ])
 

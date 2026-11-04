@@ -3,11 +3,16 @@ import { Identity } from "@semaphore-protocol/identity"
 import { generateProof } from "@semaphore-protocol/proof"
 import { poseidon2 } from "poseidon-lite"
 import {
+    BaseError,
+    ContractFunctionRevertedError,
+    ContractFunctionZeroDataError,
     encodeAbiParameters,
     getAddress,
     isAddress,
     keccak256,
     parseEventLogs,
+    toBytes,
+    zeroAddress,
     type Address,
     type Hash,
     type Hex,
@@ -461,6 +466,23 @@ export async function createPrivatePayment(
     const message = paymentMessage(merchant, orderRef)
     if (message !== onChainMessage) throw new FairPayError("INVALID_INPUT", "message encoding differs from the contract")
 
+    const proof = await proveSpend(deployment, publicClient, pool, { note, message, scope, group: params.group }, options)
+    return { chainId: deployment.chainId, pool, merchant, orderRef, proof }
+}
+
+/**
+ * Builds the Semaphore proof that spends `note` with `message` under the pool's SCOPE, and refuses
+ * a note that was never deposited or is already spent. Payments and withdrawals share it: one
+ * scope means one nullifier per note, so a note is spent once by whichever comes first.
+ */
+async function proveSpend(
+    deployment: FairPayDeployment,
+    publicClient: PublicClient,
+    pool: Address,
+    params: { note: Note; message: bigint; scope: bigint; group?: Group },
+    options: LogScanOptions
+): Promise<PrivatePaymentRequest["proof"]> {
+    const { note, message, scope } = params
     const group = params.group ?? (await fetchGroup(deployment, publicClient, options))
     if (group.indexOf(note.identity.commitment) === -1) {
         throw new FairPayError("NOTE_NOT_FOUND", "this note was never deposited in the pool")
@@ -476,22 +498,163 @@ export async function createPrivatePayment(
     if (spent) throw new FairPayError("NOTE_SPENT", "this note has already been spent")
 
     return {
-        chainId: deployment.chainId,
-        pool,
-        merchant,
-        orderRef,
-        proof: {
-            merkleTreeDepth: String(proof.merkleTreeDepth),
-            merkleTreeRoot: String(proof.merkleTreeRoot),
-            nullifier: String(proof.nullifier),
-            message: String(proof.message),
-            scope: String(proof.scope),
-            points: proof.points.map(String)
-        }
+        merkleTreeDepth: String(proof.merkleTreeDepth),
+        merkleTreeRoot: String(proof.merkleTreeRoot),
+        nullifier: String(proof.nullifier),
+        message: String(proof.message),
+        scope: String(proof.scope),
+        points: proof.points.map(String)
     }
 }
 
-/** True once the note has been used for a payment. */
+// ------------------------------------------------------------------ withdraw
+
+/** The order reference a withdrawal proof's message is bound to: keccak256("FairPool.withdraw"), as in FairPool. */
+export const WITHDRAW_REF: Hex = keccak256(toBytes("FairPool.withdraw"))
+
+/** The message a withdrawal proof carries: keccak256(abi.encode(recipient, WITHDRAW_REF)), as FairPool.withdrawMessage. */
+export function withdrawMessage(recipient: Address): bigint {
+    return paymentMessage(checkRecipient(recipient), WITHDRAW_REF)
+}
+
+/** A withdrawal proof. Contains no secret; anyone may submit it, and it pays only `recipient`. */
+export type WithdrawalRequest = {
+    chainId: number
+    pool: Address
+    recipient: Address
+    proof: PrivatePaymentRequest["proof"]
+}
+
+/**
+ * True when the pool has `withdraw` (it answers WITHDRAW_REF with the expected value). False for
+ * a pool deployed before withdrawals existed. Network errors are thrown, not reported as false.
+ */
+export async function poolSupportsWithdraw(deployment: FairPayDeployment, publicClient: PublicClient): Promise<boolean> {
+    const pool = requirePool(deployment)
+    try {
+        const ref = await publicClient.readContract({ address: pool, abi: fairPoolAbi, functionName: "WITHDRAW_REF" })
+        return ref.toLowerCase() === WITHDRAW_REF.toLowerCase()
+    } catch (err) {
+        if (isMissingFunction(err)) return false
+        throw err
+    }
+}
+
+/**
+ * Builds a zero-knowledge proof that spends `note` and sends one denomination to `recipient`.
+ * Runs entirely client-side; the note never leaves this function. Same scope and group as a
+ * payment, so the note's nullifier is the same: after a withdrawal it can't pay, and vice versa.
+ */
+export async function createWithdrawal(
+    deployment: FairPayDeployment,
+    publicClient: PublicClient,
+    params: { note: Note; recipient: Address; group?: Group },
+    options: LogScanOptions = {}
+): Promise<WithdrawalRequest> {
+    const pool = requirePool(deployment)
+    const recipient = checkWithdrawRecipient(params.recipient, pool)
+    assertNoteMatches(deployment, params.note)
+    await assertChain(deployment, { publicClient })
+
+    const [scope, onChainMessage] = await Promise.all([
+        publicClient.readContract({ address: pool, abi: fairPoolAbi, functionName: "SCOPE" }),
+        publicClient
+            .readContract({ address: pool, abi: fairPoolAbi, functionName: "withdrawMessage", args: [recipient] })
+            .catch((err: unknown) => {
+                if (isMissingFunction(err)) throw new FairPayError("NO_WITHDRAW", "this pool was deployed before withdrawals and can't withdraw notes")
+                throw err
+            })
+    ])
+    const message = withdrawMessage(recipient)
+    if (message !== onChainMessage) throw new FairPayError("INVALID_INPUT", "message encoding differs from the contract")
+
+    const proof = await proveSpend(deployment, publicClient, pool, { note: params.note, message, scope, group: params.group }, options)
+    return { chainId: deployment.chainId, pool, recipient, proof }
+}
+
+/** Progress of `withdrawNote`, reported before each slow part so a UI can say what is happening. */
+export type WithdrawProgress = { step: "prove" } | { step: "confirm" } | { step: "sent"; txHash: Hash }
+
+/**
+ * Withdraws one note: builds the proof in this process, then sends `FairPool.withdraw` from
+ * `walletClient`'s own account (which pays the gas, so the withdrawal is public and linked to that
+ * wallet) and waits for the receipt. Sends DENOMINATION to `recipient`. Returns the transaction hash.
+ */
+export async function withdrawNote(params: {
+    walletClient: Clients["walletClient"]
+    publicClient: PublicClient
+    deployment: FairPayDeployment
+    note: Note
+    recipient: Address
+    /** The pool's group, if already loaded (e.g. from an indexer via groupFromCommitments). */
+    group?: Group
+    onProgress?: (progress: WithdrawProgress) => void
+    logScan?: LogScanOptions
+}): Promise<Hash> {
+    const { deployment, note } = params
+    const pool = requirePool(deployment)
+    const recipient = checkWithdrawRecipient(params.recipient, pool)
+    assertNoteMatches(deployment, note)
+    const clients: Clients = { publicClient: params.publicClient, walletClient: params.walletClient }
+    await assertChain(deployment, clients)
+    const report = params.onProgress ?? (() => undefined)
+
+    report({ step: "prove" })
+    const request = await createWithdrawal(deployment, params.publicClient, { note, recipient, group: params.group }, params.logScan)
+
+    report({ step: "confirm" })
+    // Same gas handling as every other write: the estimate plus 15%, since Monad charges the full limit.
+    const txHash = await sendSimulated(clients, {
+        address: pool,
+        abi: fairPoolAbi,
+        functionName: "withdraw",
+        args: [recipient, proofArgs(request.proof)]
+    })
+    report({ step: "sent", txHash })
+    const receipt = await waitForSent(clients, txHash)
+    if (receipt.status !== "success") throw new Error(`withdraw reverted: ${txHash}`)
+    const nullifier = BigInt(request.proof.nullifier)
+    const found = parseEventLogs({ abi: fairPoolAbi, eventName: "Withdrawal", logs: receipt.logs }).some(
+        (l) => getAddress(l.address) === pool && l.args.nullifier === nullifier && getAddress(l.args.recipient) === recipient
+    )
+    if (!found) throw new Error(`Withdrawal event missing in ${txHash}`)
+    return txHash
+}
+
+function proofArgs(p: PrivatePaymentRequest["proof"]) {
+    return {
+        merkleTreeDepth: BigInt(p.merkleTreeDepth),
+        merkleTreeRoot: BigInt(p.merkleTreeRoot),
+        nullifier: BigInt(p.nullifier),
+        message: BigInt(p.message),
+        scope: BigInt(p.scope),
+        points: p.points.map(BigInt) as unknown as readonly [bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint]
+    }
+}
+
+function checkRecipient(recipient: unknown): Address {
+    if (typeof recipient !== "string" || !isAddress(recipient)) throw new FairPayError("INVALID_INPUT", "recipient is not an address")
+    const address = getAddress(recipient)
+    if (address === zeroAddress) throw new FairPayError("INVALID_INPUT", "recipient can't be the zero address")
+    return address
+}
+
+/** As checkRecipient, and refuses the pool itself: the pool would pay itself and the note's money would be stuck. */
+function checkWithdrawRecipient(recipient: unknown, pool: Address): Address {
+    const address = checkRecipient(recipient)
+    if (address === pool) throw new FairPayError("INVALID_INPUT", "recipient can't be the pool")
+    return address
+}
+
+/** True when a call failed because the contract has no such function (it reverts or returns nothing). */
+function isMissingFunction(err: unknown): boolean {
+    if (!(err instanceof BaseError)) return false
+    if (err.walk((e) => e instanceof ContractFunctionRevertedError || e instanceof ContractFunctionZeroDataError)) return true
+    // Some nodes report a revert as a bare -32000 that viem doesn't decode; it is still a revert.
+    return /revert/i.test(err.message)
+}
+
+/** True once the note has been spent, by a payment or a withdrawal. */
 export async function isNoteSpent(deployment: FairPayDeployment, publicClient: PublicClient, note: Note) {
     const pool = requirePool(deployment)
     const scope = await publicClient.readContract({ address: pool, abi: fairPoolAbi, functionName: "SCOPE" })
